@@ -1,0 +1,70 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+:root {
+  /* Brand */
+  --brand: #53f293;
+  --brand-strong: #3ee380;
+  --brand-subtle: #bafad4;
+  --brand-inverse: #11301d;
+  --brand-inverse-strong: #08180f;
+
+  /* Backgrounds */
+  --bg-default: #ffffff;
+  --bg-neutral-base: #fefefe;
+  --bg-subtle: #f4f4f4;
+  --bg-surface: #f5f5f5;
+  --bg-surface-medium: #e5e5e5;
+
+  /* Foreground */
+  --fg-primary: #0a0a0a;
+  --fg-secondary: rgba(0, 0, 0, 0.7);
+  --fg-tertiary: #737373;
+  --fg-disabled: rgba(0, 0, 0, 0.5);
+  --fg-inverse: #fefefe;
+
+  /* Borders */
+  --border-default: rgba(28, 29, 40, 0.1);
+  --border-primary: rgba(0, 0, 0, 0.1);
+  --border-secondary: rgba(0, 0, 0, 0.05);
+  --border-strong: #11301d;
+
+  /* Accents */
+  --accent-mustard: #fff592;
+  --accent-blue: #24afff;
+
+  /* Motion */
+  --ease-ios: cubic-bezier(0.2, 0.9, 0.3, 1.0);
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+html, body {
+  font-family: 'Poppins', sans-serif;
+  background: #f0f0f0;
+  overscroll-behavior: none;
+}
+
+/* iOS-style spring easing for transitions */
+.transition-ios {
+  transition-timing-function: var(--ease-ios);
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
