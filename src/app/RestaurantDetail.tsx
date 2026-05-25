@@ -116,71 +116,76 @@ function StatusBar() {
 // ─── Friend proof block ──────────────────────────────────────────────────────
 
 function FriendProofBlock({ visit }: { visit: FriendVisit }) {
-  const visitsText =
-    visit.visits === 1 ? "once" :
-    visit.visits === 2 ? "twice" :
-    `${visit.visits} times`;
-
+  const lastBooked =
+    visit.lastVisitDays === 1 ? "yesterday"
+    : visit.lastVisitDays < 5 ? `${visit.lastVisitDays} days ago`
+    : visit.lastVisitDays < 11 ? "1 week ago"
+    : visit.lastVisitDays < 18 ? "2 weeks ago"
+    : `${Math.round(visit.lastVisitDays / 7)} weeks ago`;
   return (
-    <div className="mx-[16px] mt-[16px] rounded-[18px] p-[14px]" style={{ background: "#11301d" }}>
-      <div className="flex items-start gap-[12px]">
+    <div
+      className="mx-[16px] mt-[16px] rounded-[16px] p-[12px]"
+      style={{ background: "rgba(17,48,29,0.05)", border: "1px solid rgba(17,48,29,0.08)" }}
+    >
+      <div className="flex items-start gap-[10px]">
         <div className="relative shrink-0">
-          <div className="w-[40px] h-[40px] rounded-full overflow-hidden flex items-center justify-center" style={{ background: visit.photo ? undefined : "#53f293" }}>
+          <div className="w-[32px] h-[32px] rounded-full overflow-hidden flex items-center justify-center" style={{ background: visit.photo ? undefined : "#53f293" }}>
             {visit.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={visit.photo} alt={visit.name} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-[15px] font-bold text-[#11301d]" style={{ fontFamily: "Poppins, sans-serif" }}>{visit.initial}</span>
+              <span className="text-[13px] font-bold text-[#11301d]" style={{ fontFamily: "Poppins, sans-serif" }}>{visit.initial}</span>
             )}
           </div>
-          <div className="absolute -bottom-[1px] -right-[1px] w-[12px] h-[12px] rounded-full border-2" style={{ background: "#53f293", borderColor: "#11301d" }} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-[8px]">
             <div className="flex flex-col min-w-0">
               {/* Name + optional legend label */}
               <div className="flex items-center gap-[6px] flex-wrap">
-                <span className="text-[14px] font-semibold text-[#53f293] leading-[18px]" style={{ fontFamily: "Poppins, sans-serif" }}>
+                <span className="text-[13px] font-semibold text-[#11301d] leading-[18px]" style={{ fontFamily: "Poppins, sans-serif" }}>
                   {visit.name}
                 </span>
                 {visit.isLegend && (
                   <div className="flex items-center gap-[4px]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/Food legend.png" alt="" style={{ width: 14, height: 14, objectFit: "contain" }} />
-                    <span className="text-[12px] font-semibold text-[#53f293] italic leading-[16px]" style={{ fontFamily: "Poppins, sans-serif" }}>
+                    <img src="/images/Food legend.png" alt="" style={{ width: 12, height: 12, objectFit: "contain" }} />
+                    <span className="text-[11px] font-medium italic leading-[16px]" style={{ fontFamily: "Poppins, sans-serif", color: "rgba(17,48,29,0.7)" }}>
                       Local foodie
                     </span>
                   </div>
                 )}
               </div>
-              <span className="text-[12px] font-semibold text-white leading-[18px]" style={{ fontFamily: "Poppins, sans-serif" }}>
-                {visit.groupText ?? `has been here ${visitsText}`}
-              </span>
-              <span className="text-[12px] font-medium text-[rgba(255,255,255,0.7)] leading-[16px] mt-[1px]" style={{ fontFamily: "Poppins, sans-serif" }}>
-                Last visit, {visit.lastVisitDays} day{visit.lastVisitDays === 1 ? "" : "s"} ago
-              </span>
+              {visit.groupText && (
+                <span className="text-[11px] font-medium leading-[16px]" style={{ fontFamily: "Poppins, sans-serif", color: "rgba(17,48,29,0.65)" }}>
+                  {visit.groupText}
+                </span>
+              )}
             </div>
             {visit.badge && (
-              <div
-                className="shrink-0 rounded-[6px]"
-                style={{ background: "#fff592", padding: "5px 8px", display: "inline-flex", alignItems: "center" }}
+              <span
+                className="shrink-0 text-[10px] font-semibold whitespace-nowrap"
+                style={{ fontFamily: "Poppins, sans-serif", color: "rgba(17,48,29,0.7)" }}
               >
-                <span className="font-semibold whitespace-nowrap" style={{ fontFamily: "Poppins, sans-serif", color: "#11301d", fontSize: 10, lineHeight: 1 }}>{visit.badge}</span>
-              </div>
+                {visit.badge}
+              </span>
             )}
           </div>
-          <p className="text-[13px] font-medium text-white leading-[19px] mt-[8px]" style={{ fontFamily: "Poppins, sans-serif" }}>
+          <p className="text-[12px] font-medium leading-[17px] mt-[4px]" style={{ fontFamily: "Poppins, sans-serif", color: "rgba(17,48,29,0.8)" }}>
             &ldquo;{visit.quote}&rdquo;
+          </p>
+          <p className="text-[11px] font-medium leading-[14px] mt-[6px]" style={{ fontFamily: "Poppins, sans-serif", color: "rgba(17,48,29,0.55)" }}>
+            Last booked {lastBooked}
           </p>
         </div>
       </div>
 
       {/* Local foodie community pill */}
       {visit.isLegend && (
-        <div className="mt-[12px] flex items-center gap-[6px] px-[10px] py-[7px] rounded-full self-start" style={{ background: "rgba(83,242,147,0.12)" }}>
+        <div className="mt-[10px] flex items-center gap-[6px] px-[8px] py-[5px] rounded-full self-start" style={{ background: "rgba(17,48,29,0.06)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/Food legend.png" alt="" style={{ width: 13, height: 13, objectFit: "contain" }} />
-          <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: 11, lineHeight: "14px", color: "#53f293" }}>
+          <img src="/images/Food legend.png" alt="" style={{ width: 12, height: 12, objectFit: "contain" }} />
+          <span style={{ fontFamily: "Poppins, sans-serif", fontWeight: 600, fontSize: 11, lineHeight: "14px", color: "rgba(17,48,29,0.75)" }}>
             5 local foodies ate here last month
           </span>
         </div>

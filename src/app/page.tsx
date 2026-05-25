@@ -461,24 +461,41 @@ function MyListMapPin({ x, y, type, active, onClick }: {
 // ─── Social result strip ──────────────────────────────────────────────────────
 
 function SocialResultCard({
-  active, onClick, image, title, topLine, cuisine, rating, distance, deals, saved, returnBadge,
+  active, onClick, onClose, image, title, topLine, cuisine, rating, distance, deals, saved, returnBadge,
+  pillIcon, pillText, pillReturns,
 }: {
   active: boolean;
   onClick: () => void;
+  onClose: () => void;
   image: string; title: string; topLine: string; cuisine: string;
   rating: number; distance: string; deals: string[];
   saved?: boolean;
   returnBadge?: string;
+  pillIcon?: React.ReactNode;
+  pillText?: string;
+  pillReturns?: string;
 }) {
+  const usePills = Boolean(pillText);
   return (
     <button
       onClick={onClick}
-      className="shrink-0 snap-start w-[360px] bg-white rounded-[18px] text-left flex p-[10px] gap-[12px]"
+      className="relative shrink-0 snap-start w-[360px] bg-white rounded-[18px] text-left flex p-[10px] gap-[12px]"
       style={{
         boxShadow: active ? "0 6px 18px rgba(0,0,0,0.15)" : "0 2px 8px rgba(0,0,0,0.10)",
         transition: "box-shadow 180ms var(--ease-ios)",
       }}
     >
+      {/* Inline close button — top-right corner of the card */}
+      <span
+        role="button"
+        tabIndex={0}
+        aria-label="Close"
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onClose(); } }}
+        className="absolute top-[8px] right-[8px] w-[24px] h-[24px] rounded-full bg-[rgba(0,0,0,0.05)] flex items-center justify-center active:scale-95 transition-transform z-10"
+      >
+        <X size={12} className="text-[#0a0a0a]" />
+      </span>
       <div className="relative w-[92px] h-[92px] rounded-[12px] overflow-hidden shrink-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={image} alt={title} className="w-full h-full object-cover" />
@@ -494,30 +511,32 @@ function SocialResultCard({
         </div>
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-[2px]">
-        {/* topLine + pill in a flex row with 8px gap */}
-        <div className="flex items-center gap-[8px] min-w-0 mb-[8px]">
-          <span className="text-[12px] font-medium text-[#737373] leading-[16px] truncate flex-1 min-w-0" style={{ fontFamily: "Poppins, sans-serif" }}>{topLine}</span>
-          {returnBadge && (
-            <div
-              className="shrink-0 rounded-[8px]"
-              style={{
-                background: "#fff592",
-                padding: "5px 10px",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <span
-                className="font-semibold whitespace-nowrap"
-                style={{ fontFamily: "Poppins, sans-serif", color: "#11301d", fontSize: 10, lineHeight: 1 }}
+        {/* Legacy top context — only when not using the bottom pill layout */}
+        {!usePills && (
+          <div className="flex flex-col gap-[4px] min-w-0 mb-[8px]">
+            <span className="text-[12px] font-medium text-[#737373] leading-[16px] truncate pr-[28px]" style={{ fontFamily: "Poppins, sans-serif" }}>{topLine}</span>
+            {returnBadge && (
+              <div
+                className="self-start rounded-[8px]"
+                style={{
+                  background: "#fff592",
+                  padding: "5px 10px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
-                {returnBadge}
-              </span>
-            </div>
-          )}
-        </div>
-        <span className="text-[16px] font-bold text-[#0a0a0a] leading-[20px] truncate" style={{ fontFamily: "Poppins, sans-serif" }}>{title}</span>
+                <span
+                  className="font-semibold whitespace-nowrap"
+                  style={{ fontFamily: "Poppins, sans-serif", color: "#11301d", fontSize: 10, lineHeight: 1 }}
+                >
+                  {returnBadge}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+        <span className={`text-[16px] font-bold text-[#0a0a0a] leading-[20px] truncate ${usePills ? "pr-[28px]" : ""}`} style={{ fontFamily: "Poppins, sans-serif" }}>{title}</span>
         <div className="flex items-center gap-[6px] min-w-0">
           <span className="text-[11px] font-medium text-[#737373] leading-[14px] truncate min-w-0" style={{ fontFamily: "Poppins, sans-serif" }}>{cuisine}</span>
           <span className="w-[2px] h-[2px] rounded-full bg-[#737373] shrink-0" />
@@ -533,6 +552,36 @@ function SocialResultCard({
             <span key={d} className="shrink-0 px-[8px] py-[2px] rounded-full text-[11px] font-semibold text-[#0a0a0a] whitespace-nowrap leading-[16px]" style={{ background: "#53f293", fontFamily: "Poppins, sans-serif" }}>{d}</span>
           ))}
         </div>
+        {/* Bottom social pills — mirrors the list view's grey + yellow combo */}
+        {usePills && (
+          <div className="flex items-center gap-[4px] mt-[6px] min-w-0">
+            <div
+              className="inline-flex items-center gap-[4px] rounded-[10px] min-w-0"
+              style={{ background: "rgba(0,0,0,0.05)", padding: "4px 6px" }}
+            >
+              {pillIcon}
+              <span
+                className="whitespace-nowrap"
+                style={{ fontFamily: "Poppins, sans-serif", color: "rgba(0,0,0,0.6)", fontSize: 11, lineHeight: "14px", fontWeight: 500 }}
+              >
+                {pillText}
+              </span>
+            </div>
+            {pillReturns && (
+              <div
+                className="inline-flex items-center rounded-[10px] shrink-0"
+                style={{ background: "#fff592", padding: "4px 6px" }}
+              >
+                <span
+                  className="whitespace-nowrap"
+                  style={{ fontFamily: "Poppins, sans-serif", color: "#11301d", fontSize: 11, lineHeight: "14px", fontWeight: 600 }}
+                >
+                  {pillReturns}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </button>
   );
@@ -568,7 +617,27 @@ function SocialResultStrip({ mode, activeIdx, setActiveIdx, onClose, onOpenDetai
         topLine: c.topLine ?? `${c.friendName} booked ${lastBookedLabel(c.lastVisitDays)}`,
         rating: c.restaurant.rating,
         distance: c.restaurant.distance, deals: c.restaurant.deals,
-        returnBadge: c.badge,
+        pillIcon: (
+          <div
+            className="w-[14px] h-[14px] rounded-full overflow-hidden shrink-0 flex items-center justify-center"
+            style={{ background: c.photo ? undefined : "#53f293" }}
+          >
+            {c.photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={c.photo} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 8, fontWeight: 700, color: "#11301d", lineHeight: 1 }}>{c.initial}</span>
+            )}
+          </div>
+        ),
+        pillText:
+          c.extraFriends && c.extraFriends > 0
+            ? `${c.friendName} + ${c.extraFriends} other friend${c.extraFriends === 1 ? "" : "s"} booked`
+            : `${c.friendName} booked`,
+        pillReturns: (() => {
+          const m = c.badge?.match(/^x(\d+)/);
+          return m ? `${m[1]}x returns` : undefined;
+        })(),
       }))
     : mode === "legends"
     ? LEGEND_RESULT_CARDS.map((c) => ({
@@ -578,6 +647,12 @@ function SocialResultStrip({ mode, activeIdx, setActiveIdx, onClose, onOpenDetai
           : `${c.booked} booked`,
         rating: c.restaurant.rating,
         distance: c.restaurant.distance, deals: c.restaurant.deals,
+        pillIcon: (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src="/images/Food legend.png" alt="" className="shrink-0" style={{ width: 12, height: 12, objectFit: "contain" }} />
+        ),
+        pillText: `${c.booked} local foodies booked`,
+        pillReturns: c.rebooked > 0 ? `${c.rebooked}x returns` : undefined,
       }))
     : MYLIST_ENTRIES.map((entry) => ({
         image: entry.restaurant.image, title: entry.restaurant.name, cuisine: entry.restaurant.cuisine,
@@ -666,17 +741,6 @@ function SocialResultStrip({ mode, activeIdx, setActiveIdx, onClose, onOpenDetai
       exit={{ y: 240, opacity: 0 }}
       transition={{ type: "spring", damping: 32, stiffness: 320 }}
     >
-      {/* Floating close button */}
-      <div className="px-[16px] mb-[12px] flex items-center justify-end">
-        <button
-          onClick={onClose}
-          className="w-[36px] h-[36px] rounded-full bg-white flex items-center justify-center active:scale-95 transition-transform"
-          style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}
-        >
-          <X size={16} className="text-[#0a0a0a]" />
-        </button>
-      </div>
-
       {/* Scrollable cards */}
       <div
         ref={scrollerRef}
@@ -697,6 +761,7 @@ function SocialResultStrip({ mode, activeIdx, setActiveIdx, onClose, onOpenDetai
                 if (i === activeIdx) onOpenDetail(i);
                 else setActiveIdx(i);
               }}
+              onClose={onClose}
             />
           </div>
         ))}
@@ -767,7 +832,8 @@ function FilterChips({
       const label =
         effectiveMode === "legends" ? "Local Foodies" :
         effectiveMode === "mylist"  ? "My list" :
-                                       "Friends";
+        effectiveMode === "friends" ? "Friends" :
+                                       "Your circle";
       const count =
         effectiveMode === "legends" ? LEGENDS_LIST.length :
         effectiveMode === "mylist"  ? MYLIST_ENTRIES.length :
@@ -884,15 +950,27 @@ function DealChip({ label }: { label: string }) {
 function RestaurantListItem({
   restaurant,
   showDivider,
+  signalOverride,
+  returnsBadge,
+  signalIcon,
+  onOpen,
 }: {
   restaurant: Restaurant;
   showDivider: boolean;
+  signalOverride?: string;
+  returnsBadge?: string;
+  signalIcon?: React.ReactNode;
+  onOpen?: () => void;
 }) {
+  const signal = signalOverride ?? restaurant.signal;
   const [saved, setSaved] = useState(false);
 
   return (
     <>
-      <div className="flex gap-[12px] items-center py-[8px]">
+      <div
+        className="flex gap-[12px] items-center py-[8px] cursor-pointer active:opacity-80 transition-opacity"
+        onClick={onOpen}
+      >
         {/* Image */}
         <div className="relative shrink-0 w-[108px] h-[108px] rounded-[16px] overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -904,7 +982,7 @@ function RestaurantListItem({
           {/* Heart icon overlay */}
           <button
             className="absolute top-[8px] left-[8px] w-[24px] h-[24px] flex items-center justify-center"
-            onClick={() => setSaved(!saved)}
+            onClick={(e) => { e.stopPropagation(); setSaved(!saved); }}
           >
             <Heart
               size={18}
@@ -954,21 +1032,37 @@ function RestaurantListItem({
             ))}
           </div>
 
-          {/* Recency signal pill */}
-          {restaurant.signal && (
-            <div
-              className="self-start px-[8px] py-[3px] rounded-full"
-              style={{ background: "rgba(0,0,0,0.05)" }}
-            >
-              <span
-                className="text-[11px] font-medium leading-[16px] whitespace-nowrap"
-                style={{
-                  fontFamily: "Poppins, sans-serif",
-                  color: "rgba(0,0,0,0.6)",
-                }}
-              >
-                {restaurant.signal}
-              </span>
+          {/* Recency signal pill + optional yellow returns pill — heights
+              matched, kept on a single row (returns badge never wraps below). */}
+          {(signal || returnsBadge) && (
+            <div className="flex items-center gap-[4px] min-w-0">
+              {signal && (
+                <div
+                  className="inline-flex items-center gap-[4px] rounded-[10px] min-w-0"
+                  style={{ background: "rgba(0,0,0,0.05)", padding: "4px 6px" }}
+                >
+                  {signalIcon}
+                  <span
+                    className="whitespace-nowrap"
+                    style={{ fontFamily: "Poppins, sans-serif", color: "rgba(0,0,0,0.6)", fontSize: 11, lineHeight: "14px", fontWeight: 500 }}
+                  >
+                    {signal}
+                  </span>
+                </div>
+              )}
+              {returnsBadge && (
+                <div
+                  className="inline-flex items-center rounded-[10px] shrink-0"
+                  style={{ background: "#fff592", padding: "4px 6px" }}
+                >
+                  <span
+                    className="whitespace-nowrap"
+                    style={{ fontFamily: "Poppins, sans-serif", color: "#11301d", fontSize: 11, lineHeight: "14px", fontWeight: 600 }}
+                  >
+                    {returnsBadge}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1408,6 +1502,7 @@ function MyListShareSheet({ onClose }: { onClose: () => void }) {
 
 function SocialTabContent({ tab, radius, onRadiusChange }: { tab: SocialTab; radius: number; onRadiusChange: (v: number) => void }) {
   const [shareOpen, setShareOpen] = useState(false);
+  const [myListFilter, setMyListFilter] = useState<"all" | "visited" | "saved">("all");
 
   if (tab === "friends") {
     return (
@@ -1522,42 +1617,59 @@ function SocialTabContent({ tab, radius, onRadiusChange }: { tab: SocialTab; rad
 
       {/* Filter chips */}
       <div className="flex items-center gap-[8px]">
-        {/* All — active */}
-        <div className="flex items-center gap-[6px] pl-[14px] pr-[6px] py-[8px] rounded-full" style={{ background: "#11301d" }}>
-          <span className="text-[14px] font-semibold text-white" style={{ fontFamily: "Poppins, sans-serif" }}>All</span>
-          <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center" style={{ background: "#53f293" }}>
-            <span className="text-[11px] font-bold text-[#11301d]" style={{ fontFamily: "Poppins, sans-serif" }}>{MYLIST_ENTRIES.length}</span>
-          </div>
-        </div>
-        {/* Visited */}
-        <div className="flex items-center gap-[6px] pl-[14px] pr-[6px] py-[8px] rounded-full border border-[rgba(0,0,0,0.12)] bg-white">
-          <Check size={14} strokeWidth={2.5} className="text-[#0a0a0a]" />
-          <span className="text-[14px] font-semibold text-[#0a0a0a]" style={{ fontFamily: "Poppins, sans-serif" }}>Visited</span>
-          <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center" style={{ background: "#f5f5f5" }}>
-            <span className="text-[11px] font-bold text-[#11301d]" style={{ fontFamily: "Poppins, sans-serif" }}>{MYLIST_ENTRIES.filter(e => e.type === "visited").length}</span>
-          </div>
-        </div>
-        {/* Saved */}
-        <div className="flex items-center gap-[6px] pl-[14px] pr-[6px] py-[8px] rounded-full border border-[rgba(0,0,0,0.12)] bg-white">
-          <Heart size={14} className="text-[#0a0a0a]" fill="#0a0a0a" />
-          <span className="text-[14px] font-semibold text-[#0a0a0a]" style={{ fontFamily: "Poppins, sans-serif" }}>Saved</span>
-          <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center" style={{ background: "#f5f5f5" }}>
-            <span className="text-[11px] font-bold text-[#11301d]" style={{ fontFamily: "Poppins, sans-serif" }}>{MYLIST_ENTRIES.filter(e => e.type === "saved").length}</span>
-          </div>
-        </div>
+        {(["all", "visited", "saved"] as const).map((key) => {
+          const active = myListFilter === key;
+          const count =
+            key === "all" ? MYLIST_ENTRIES.length
+            : MYLIST_ENTRIES.filter((e) => e.type === key).length;
+          const label = key === "all" ? "All" : key === "visited" ? "Visited" : "Saved";
+          return (
+            <button
+              key={key}
+              onClick={() => setMyListFilter(key)}
+              className="flex items-center gap-[6px] pl-[14px] pr-[6px] py-[8px] rounded-full transition-colors active:scale-95"
+              style={
+                active
+                  ? { background: "#11301d" }
+                  : { background: "white", border: "1px solid rgba(0,0,0,0.12)" }
+              }
+            >
+              {key === "visited" && (
+                <Check size={14} strokeWidth={2.5} className={active ? "text-white" : "text-[#0a0a0a]"} />
+              )}
+              {key === "saved" && (
+                <Heart size={14} className={active ? "text-white" : "text-[#0a0a0a]"} fill={active ? "white" : "#0a0a0a"} />
+              )}
+              <span
+                className="text-[14px] font-semibold"
+                style={{ fontFamily: "Poppins, sans-serif", color: active ? "white" : "#0a0a0a" }}
+              >
+                {label}
+              </span>
+              <div
+                className="w-[22px] h-[22px] rounded-full flex items-center justify-center"
+                style={{ background: active ? "#53f293" : "#f5f5f5" }}
+              >
+                <span className="text-[11px] font-bold text-[#11301d]" style={{ fontFamily: "Poppins, sans-serif" }}>{count}</span>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Saved restaurant rows */}
+      {/* Saved restaurant rows — filtered by the active chip */}
       <div className="flex flex-col gap-[16px]">
-        {MYLIST_ENTRIES.map((entry, i) => (
-          <MyListRestaurantRow
-            key={entry.restaurant.id + entry.type}
-            restaurant={entry.restaurant}
-            meta={entry.meta}
-            type={entry.type}
-            showDivider={i < MYLIST_ENTRIES.length - 1}
-          />
-        ))}
+        {MYLIST_ENTRIES
+          .filter((e) => myListFilter === "all" || e.type === myListFilter)
+          .map((entry, i, arr) => (
+            <MyListRestaurantRow
+              key={entry.restaurant.id + entry.type}
+              restaurant={entry.restaurant}
+              meta={entry.meta}
+              type={entry.type}
+              showDivider={i < arr.length - 1}
+            />
+          ))}
       </div>
     </div>
   );
@@ -1719,12 +1831,103 @@ const FULL_OFFSET = 120; // distance from top of screen when fully expanded
 
 type SheetState = "peek" | "mid" | "expanded";
 
-function BottomSheet({ tabBarHeight }: { tabBarHeight: number }) {
+function BottomSheet({ tabBarHeight, socialResultMode, onOpenDetail }: { tabBarHeight: number; socialResultMode: SocialTab | null; onOpenDetail: (restaurant: Restaurant) => void }) {
   const y = useMotionValue(0);
   const [sheetState, setSheetState] = useState<SheetState>("mid");
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const isExpanded = sheetState === "expanded";
+
+  // Items shown in the list — filtered by the active social result mode.
+  // Deduped by restaurant id so a restaurant doesn't appear multiple times
+  // when several friends/legends have booked the same place.
+  const items: Restaurant[] = (() => {
+    const dedupe = (list: Restaurant[]) => {
+      const seen = new Set<string>();
+      return list.filter((r) => {
+        if (seen.has(r.id)) return false;
+        seen.add(r.id);
+        return true;
+      });
+    };
+    if (socialResultMode === "friends") return dedupe(FRIEND_RESULT_CARDS.map((c) => c.restaurant));
+    if (socialResultMode === "legends") return dedupe(LEGEND_RESULT_CARDS.map((c) => c.restaurant));
+    if (socialResultMode === "mylist")  return MYLIST_ENTRIES.map((e) => e.restaurant);
+    return RESTAURANTS;
+  })();
+
+  // Friend-style social signal for a restaurant — used both in the friends
+  // filter view and as a "spice up the default list" sample.
+  function friendSignal(restaurant: Restaurant) {
+    const matches = FRIEND_RESULT_CARDS.filter((c) => c.restaurant.id === restaurant.id);
+    if (matches.length === 0) return null;
+    const names = matches.map((c) => c.friendName);
+    const namesText =
+      names.length === 1 ? names[0]
+      : names.length === 2 ? `${names[0]} and ${names[1]}`
+      : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+    const total = matches.reduce((sum, c) => {
+      const m = c.badge?.match(/^x(\d+)/);
+      return sum + (m ? parseInt(m[1], 10) : 0);
+    }, 0);
+    const first = matches[0];
+    const icon = (
+      <div
+        className="w-[14px] h-[14px] rounded-full overflow-hidden shrink-0 flex items-center justify-center"
+        style={{ background: first.photo ? undefined : "#53f293" }}
+      >
+        {first.photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={first.photo} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 8, fontWeight: 700, color: "#11301d", lineHeight: 1 }}>{first.initial}</span>
+        )}
+      </div>
+    );
+    return {
+      text: `${namesText} booked`,
+      returns: total > 0 ? `${total}x returns` : undefined,
+      icon,
+    };
+  }
+
+  // Legend-style social signal — used both in the foodies filter view and as
+  // a "spice up the default list" sample.
+  function legendSignal(restaurant: Restaurant) {
+    const matches = LEGEND_RESULT_CARDS.filter((c) => c.restaurant.id === restaurant.id);
+    if (matches.length === 0) return null;
+    const best = matches.reduce((a, b) => (b.booked > a.booked ? b : a));
+    const icon = (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src="/images/Food legend.png" alt="" className="shrink-0" style={{ width: 12, height: 12, objectFit: "contain" }} />
+    );
+    return {
+      text: `${best.booked} local foodies booked`,
+      returns: best.rebooked > 0 ? `${best.rebooked}x returns` : undefined,
+      icon,
+    };
+  }
+
+  // Choose which (if any) social signal overrides a restaurant's default
+  // "🔥 N booked / Last booked X ago" signal. In filter modes every item gets
+  // the matching social signal; in the default browse list two items are
+  // highlighted to preview the social data.
+  function socialOverride(restaurant: Restaurant) {
+    if (socialResultMode === "friends") return friendSignal(restaurant);
+    if (socialResultMode === "legends") return legendSignal(restaurant);
+    if (socialResultMode === null) {
+      if (restaurant.id === "1" || restaurant.id === "3") return friendSignal(restaurant);
+      if (restaurant.id === "4") return legendSignal(restaurant);
+    }
+    return null;
+  }
+
+  const resultCount =
+    socialResultMode === "friends" ? 23 :
+    socialResultMode === "legends" ? 31 :
+    socialResultMode === "mylist"  ? MYLIST_ENTRIES.length :
+    0;
+  const heading = socialResultMode ? `${resultCount} results` : "Browse all deals";
 
   const sheetHeight: Record<SheetState, string> = {
     peek:     `${tabBarHeight + 24}px`,
@@ -1794,7 +1997,7 @@ function BottomSheet({ tabBarHeight }: { tabBarHeight: number }) {
             className="text-[20px] font-bold leading-[26px] text-[#0a0a0a]"
             style={{ fontFamily: "Poppins, sans-serif" }}
           >
-            Browse all deals
+            {heading}
           </h2>
         </div>
       )}
@@ -1807,13 +2010,20 @@ function BottomSheet({ tabBarHeight }: { tabBarHeight: number }) {
           paddingBottom: tabBarHeight + 8,
         }}
       >
-        {RESTAURANTS.map((r, i) => (
-          <RestaurantListItem
-            key={r.id}
-            restaurant={r}
-            showDivider={i < RESTAURANTS.length - 1}
-          />
-        ))}
+        {items.map((r, i) => {
+          const override = socialOverride(r);
+          return (
+            <RestaurantListItem
+              key={r.id}
+              restaurant={r}
+              showDivider={i < items.length - 1}
+              signalOverride={override?.text}
+              returnsBadge={override?.returns}
+              signalIcon={override?.icon}
+              onOpen={() => onOpenDetail(r)}
+            />
+          );
+        })}
       </div>
 
       {/* Floating Map button — only when fully expanded */}
@@ -1883,8 +2093,8 @@ function TabBar() {
               key={tab.id}
               className="flex items-center justify-center flex-1"
               onClick={() => setActiveTab(tab.id)}
-              disabled={["home", "feed", "bookings"].includes(tab.id)}
-              style={{ opacity: ["home", "feed", "bookings"].includes(tab.id) ? 0.35 : 1 }}
+              disabled={["home", "feed", "bookings", "profile"].includes(tab.id)}
+              style={{ opacity: ["home", "feed", "bookings", "profile"].includes(tab.id) ? 0.35 : 1 }}
             >
               <div
                 className="flex flex-col items-center gap-[3px]"
@@ -1945,10 +2155,36 @@ export default function DiscoverPage() {
   const [socialResultMode, setSocialResultMode] = useState<SocialTab | null>(null);
   const [mapRadius, setMapRadius] = useState<number | null>(null);
   const [activeCardIdx, setActiveCardIdx] = useState(0);
+  const [pinSelected, setPinSelected] = useState(false);
   const [detail, setDetail] = useState<DetailContext | null>(null);
 
-  function handleOpenDetail(idx: number) {
-    if (socialResultMode === "friends") {
+  function handleOpenDetailForRestaurant(restaurant: Restaurant) {
+    // Match the list view's social-signal rules so clicking a card that shows
+    // "Steve booked" opens the detail with Steve's proof block.
+    const showFriend =
+      socialResultMode === "friends" ||
+      (socialResultMode === null && (restaurant.id === "1" || restaurant.id === "3"));
+    const showLegend =
+      socialResultMode === "legends" ||
+      (socialResultMode === null && restaurant.id === "4");
+
+    if (showFriend) {
+      const idx = FRIEND_RESULT_CARDS.findIndex((c) => c.restaurant.id === restaurant.id);
+      if (idx !== -1) return handleOpenDetail(idx, "friends");
+    }
+    if (showLegend) {
+      const idx = LEGEND_RESULT_CARDS.findIndex((c) => c.restaurant.id === restaurant.id);
+      if (idx !== -1) return handleOpenDetail(idx, "legends");
+    }
+    if (socialResultMode === "mylist") {
+      const idx = MYLIST_ENTRIES.findIndex((e) => e.restaurant.id === restaurant.id);
+      if (idx !== -1) return handleOpenDetail(idx, "mylist");
+    }
+    setDetail({ restaurant });
+  }
+
+  function handleOpenDetail(idx: number, mode: SocialTab | null = socialResultMode) {
+    if (mode === "friends") {
       const card = FRIEND_RESULT_CARDS[idx];
       if (!card) return;
       setDetail({
@@ -1967,7 +2203,7 @@ export default function DiscoverPage() {
       });
       return;
     }
-    if (socialResultMode === "legends") {
+    if (mode === "legends") {
       const card = LEGEND_RESULT_CARDS[idx];
       if (!card) return;
       const person = LEGENDS_LIST[idx];
@@ -1986,7 +2222,7 @@ export default function DiscoverPage() {
       });
       return;
     }
-    if (socialResultMode === "mylist") {
+    if (mode === "mylist") {
       const entry = MYLIST_ENTRIES[idx];
       if (!entry) return;
       setDetail({ restaurant: entry.restaurant });
@@ -2006,6 +2242,7 @@ export default function DiscoverPage() {
     setSocialResultMode(tab);
     setMapRadius(tab === "mylist" ? null : radius);
     setActiveCardIdx(0);
+    setPinSelected(false);
     setFriendsSheetOpen(false);
     setActiveFilter("friends");
   }
@@ -2014,6 +2251,7 @@ export default function DiscoverPage() {
     setSocialResultMode(null);
     setMapRadius(null);
     setActiveFilter(null);
+    setPinSelected(false);
   }
 
   function handleResetFilters() {
@@ -2021,6 +2259,7 @@ export default function DiscoverPage() {
     setMapRadius(null);
     setActiveFilter(null);
     setActiveCardIdx(0);
+    setPinSelected(false);
     setFriendsSheetOpen(false);
     setDetail(null);
   }
@@ -2053,7 +2292,8 @@ export default function DiscoverPage() {
         />
       )}
 
-      {/* "You" dot — above pins so it's always visible */}
+      {/* "You" dot — above pins but behind the list sheet (z-20) so it only
+          shows in the map area, not over the bottom sheet. */}
       {mapRadius !== null && (
         <div
           className="absolute pointer-events-none"
@@ -2067,7 +2307,7 @@ export default function DiscoverPage() {
             background: "#53f293",
             border: "2.5px solid white",
             boxShadow: "0 2px 6px rgba(0,0,0,0.28)",
-            zIndex: 25,
+            zIndex: 15,
           }}
         />
       )}
@@ -2082,8 +2322,8 @@ export default function DiscoverPage() {
             hasReturnVisit={(FRIEND_RESULT_CARDS[i]?.visits ?? 0) > 1}
             hasFavourited={FRIEND_RESULT_CARDS[i]?.favourited ?? false}
             extraFriends={FRIEND_RESULT_CARDS[i]?.extraFriends}
-            active={i === activeCardIdx}
-            onClick={() => setActiveCardIdx(i)}
+            active={pinSelected && i === activeCardIdx}
+            onClick={() => { setActiveCardIdx(i); setPinSelected(true); }}
           />
         ))}
         {socialResultMode === "legends" && LEGEND_MAP_PINS.map((pin, i) => (
@@ -2092,8 +2332,8 @@ export default function DiscoverPage() {
             x={pin.x} y={pin.y}
             count={pin.count}
             hasReturnVisit={(LEGEND_RESULT_CARDS[i]?.rebooked ?? 0) > 0}
-            active={i === activeCardIdx}
-            onClick={() => setActiveCardIdx(i)}
+            active={pinSelected && i === activeCardIdx}
+            onClick={() => { setActiveCardIdx(i); setPinSelected(true); }}
           />
         ))}
         {socialResultMode === "mylist" && MYLIST_MAP_PINS.map((pin, i) => (
@@ -2101,8 +2341,8 @@ export default function DiscoverPage() {
             key={i}
             x={pin.x} y={pin.y}
             type={MYLIST_ENTRIES[i]?.type ?? "saved"}
-            active={i === activeCardIdx}
-            onClick={() => setActiveCardIdx(i)}
+            active={pinSelected && i === activeCardIdx}
+            onClick={() => { setActiveCardIdx(i); setPinSelected(true); }}
           />
         ))}
         {!socialResultMode && MAP_PINS.map((pin, i) => (
@@ -2138,11 +2378,12 @@ export default function DiscoverPage() {
         />
       </div>
 
-      {/* Location button */}
+      {/* Location button — sits behind the list view so it only peeks out
+          above the sheet when there's map showing. */}
       <button
-        className="absolute z-20 right-[16px] w-[48px] h-[48px] bg-white rounded-full flex items-center justify-center active:scale-95 transition-transform duration-100"
+        className="absolute z-[15] right-[16px] w-[48px] h-[48px] bg-white rounded-full flex items-center justify-center active:scale-95 transition-transform duration-100"
         style={{
-          bottom: socialResultMode ? TAB_BAR_HEIGHT + 220 : TAB_BAR_HEIGHT + 16,
+          bottom: socialResultMode && pinSelected ? TAB_BAR_HEIGHT + 220 : TAB_BAR_HEIGHT + 16,
           boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
           transition: "bottom 0.3s ease",
         }}
@@ -2150,17 +2391,24 @@ export default function DiscoverPage() {
         <Navigation size={20} className="text-[#0a0a0a]" fill="#0a0a0a" />
       </button>
 
-      {/* Regular bottom sheet — hidden in social result mode */}
-      {!socialResultMode && <BottomSheet tabBarHeight={TAB_BAR_HEIGHT} />}
+      {/* Bottom sheet — hidden only when a pin is actively selected in social
+          result mode (the SocialResultStrip takes its place). */}
+      {!(socialResultMode && pinSelected) && (
+        <BottomSheet
+          tabBarHeight={TAB_BAR_HEIGHT}
+          socialResultMode={socialResultMode}
+          onOpenDetail={handleOpenDetailForRestaurant}
+        />
+      )}
 
-      {/* Social result strip */}
+      {/* Social result strip — only when a pin has been selected */}
       <AnimatePresence>
-        {socialResultMode && (
+        {socialResultMode && pinSelected && (
           <SocialResultStrip
             mode={socialResultMode}
             activeIdx={activeCardIdx}
             setActiveIdx={setActiveCardIdx}
-            onClose={handleCloseResults}
+            onClose={() => setPinSelected(false)}
             onOpenDetail={handleOpenDetail}
           />
         )}
