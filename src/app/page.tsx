@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
 import { motion, AnimatePresence, useMotionValue, PanInfo, animate } from "motion/react";
 import {
   SlidersHorizontal,
@@ -129,6 +129,54 @@ const MAP_PINS = [
   { x: 45, y: 18 }, { x: 75, y: 18 }, { x: 48, y: 74 },
 ];
 
+// Social-signal overlays shown on the default (no-filter) map to tease the
+// friends / foodies data. Each key is the MAP_PINS index.
+const MAP_PIN_OVERLAYS: Record<number, {
+  returnBadge?: boolean;
+  returnCount?: number;
+  returnType?: "friends" | "foodies";
+  extraCount?: number;
+  avatarPhoto?: string;
+  avatarInitial?: string;
+  avatarName?: string;
+  foodie?: boolean;
+  foodieCount?: number;
+}> = {
+  2:  { returnBadge: true, returnCount: 2,  returnType: "friends"  },
+  7:  { returnBadge: true, returnCount: 4,  returnType: "friends"  },
+  17: { returnBadge: true, returnCount: 25, returnType: "foodies"  },
+  25: { returnBadge: true, returnCount: 3,  returnType: "friends"  },
+  4:  { extraCount: 2 },
+  14: { extraCount: 4 },
+  0:  { avatarPhoto: "/images/Steve.jpg",  avatarInitial: "S", avatarName: "Steve" },
+  11: { avatarPhoto: "/images/Laura.jpg",  avatarInitial: "L", avatarName: "Laura" },
+  22: { avatarPhoto: "/images/Mia.jpg",    avatarInitial: "M", avatarName: "Mia" },
+  5:  { foodie: true, foodieCount: 26 },
+  10: { foodie: true, foodieCount: 51 },
+  20: { foodie: true, foodieCount: 38 },
+  28: { foodie: true, foodieCount: 14 },
+};
+
+interface DiscoverEntry {
+  restaurant: Restaurant;
+  overlay?: {
+    returnBadge?: boolean;
+    returnCount?: number;
+    returnType?: "friends" | "foodies";
+    extraCount?: number;
+    avatarPhoto?: string;
+    avatarInitial?: string;
+    avatarName?: string;
+    foodie?: boolean;
+    foodieCount?: number;
+  };
+}
+
+const MAP_DISCOVER_ENTRIES: DiscoverEntry[] = MAP_PINS.map((_, i) => ({
+  restaurant: RESTAURANTS[i % RESTAURANTS.length],
+  overlay: MAP_PIN_OVERLAYS[i],
+}));
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StatusBar() {
@@ -212,55 +260,87 @@ function MapBackground() {
   );
 }
 
-function NeoPin({ x, y }: { x: number; y: number }) {
-  return (
+function NeoPin({ x, y, badge, badgeLeft, extraCount, active, onClick }: {
+  x: number; y: number;
+  badge?: React.ReactNode;
+  badgeLeft?: React.ReactNode;
+  extraCount?: number;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  const posStyle: React.CSSProperties = {
+    left: `${x}%`,
+    top: `${y}%`,
+    transform: `translate(-50%, -100%) scale(${active ? 1.18 : 1})`,
+    zIndex: active ? 20 : 10,
+    transitionProperty: "transform",
+    transitionDuration: "180ms",
+  };
+  const pinContent = (
     <div
-      className="absolute"
       style={{
-        left: `${x}%`,
-        top: `${y}%`,
-        transform: "translate(-50%, -100%)",
-        zIndex: 10,
+        width: 24,
+        height: 32,
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
       }}
     >
+      {/* Pin head */}
       <div
         style={{
           width: 24,
-          height: 32,
-          position: "relative",
+          height: 24,
+          borderRadius: "50% 50% 50% 0",
+          transform: "rotate(-45deg)",
+          background: "#53f293",
+          border: active ? "2px solid #11301d" : "1.5px solid rgba(0,0,0,0.12)",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
+          justifyContent: "center",
+          boxShadow: active ? "0 2px 8px rgba(0,0,0,0.25)" : "0 1px 4px rgba(0,0,0,0.18)",
         }}
       >
-        {/* Pin head */}
-        <div
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/N.png"
+          alt=""
           style={{
-            width: 24,
-            height: 24,
-            borderRadius: "50% 50% 50% 0",
-            transform: "rotate(-45deg)",
-            background: "#53f293",
-            border: "1.5px solid rgba(0,0,0,0.12)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+            transform: "rotate(45deg)",
+            width: 12,
+            height: 12,
+            objectFit: "contain",
           }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/images/N.png"
-            alt=""
-            style={{
-              transform: "rotate(45deg)",
-              width: 12,
-              height: 12,
-              objectFit: "contain",
-            }}
-          />
-        </div>
+        />
       </div>
+      {badge     && <div style={{ position: "absolute", top: -4, right: -6, zIndex: 2 }}>{badge}</div>}
+      {badgeLeft && <div style={{ position: "absolute", top: -4, left: -6,  zIndex: 2 }}>{badgeLeft}</div>}
+      {(extraCount ?? 0) > 0 && (
+        <div style={{
+          position: "absolute", bottom: 6, right: -16, zIndex: 2,
+          background: "#11301d", borderRadius: 99, border: "1.5px solid white",
+          padding: "2px 5px", display: "inline-flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#53f293", lineHeight: 1, fontFamily: "Poppins, sans-serif" }}>+{extraCount}</span>
+        </div>
+      )}
+    </div>
+  );
+  if (onClick) {
+    return (
+      <button
+        className="absolute pointer-events-auto active:scale-95"
+        style={posStyle}
+        onClick={onClick}
+      >
+        {pinContent}
+      </button>
+    );
+  }
+  return (
+    <div className="absolute" style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -100%)", zIndex: 10 }}>
+      {pinContent}
     </div>
   );
 }
@@ -440,14 +520,21 @@ function LegendMapPin({ x, y, count, hasReturnVisit, active, onClick }: {
 
 const USER_AVATAR = "/images/Steve.jpg";
 
-function MyListMapPin({ x, y, type, active, onClick }: {
+function MyListMapPin({ x, y, type, hasReturnVisit, active, onClick }: {
   x: number; y: number;
   type: "visited" | "saved";
+  hasReturnVisit?: boolean;
   active: boolean;
   onClick: () => void;
 }) {
+  const badge = hasReturnVisit ? (
+    <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff592", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/images/Return_visits.png" alt="" style={{ width: 8, height: 8, objectFit: "contain" }} />
+    </div>
+  ) : undefined;
   return (
-    <MapMarker x={x} y={y} active={active} onClick={onClick}>
+    <MapMarker x={x} y={y} badge={badge} active={active} onClick={onClick}>
       {type === "visited" ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={USER_AVATAR} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -475,7 +562,7 @@ function SocialResultCard({
   pillText?: string;
   pillReturns?: string;
 }) {
-  const usePills = Boolean(pillText);
+  const usePills = Boolean(pillText || pillReturns);
   return (
     <button
       onClick={onClick}
@@ -555,18 +642,20 @@ function SocialResultCard({
         {/* Bottom social pills — mirrors the list view's grey + yellow combo */}
         {usePills && (
           <div className="flex items-center gap-[4px] mt-[6px] min-w-0">
-            <div
-              className="inline-flex items-center gap-[4px] rounded-[10px] min-w-0"
-              style={{ background: "rgba(0,0,0,0.05)", padding: "4px 6px" }}
-            >
-              {pillIcon}
-              <span
-                className="whitespace-nowrap"
-                style={{ fontFamily: "Poppins, sans-serif", color: "rgba(0,0,0,0.6)", fontSize: 11, lineHeight: "14px", fontWeight: 500 }}
+            {pillText && (
+              <div
+                className="inline-flex items-center gap-[4px] rounded-[10px] min-w-0"
+                style={{ background: "rgba(0,0,0,0.05)", padding: "4px 6px" }}
               >
-                {pillText}
-              </span>
-            </div>
+                {pillIcon}
+                <span
+                  className="whitespace-nowrap"
+                  style={{ fontFamily: "Poppins, sans-serif", color: "rgba(0,0,0,0.6)", fontSize: 11, lineHeight: "14px", fontWeight: 500 }}
+                >
+                  {pillText}
+                </span>
+              </div>
+            )}
             {pillReturns && (
               <div
                 className="inline-flex items-center rounded-[10px] shrink-0"
@@ -587,8 +676,11 @@ function SocialResultCard({
   );
 }
 
-function SocialResultStrip({ mode, activeIdx, setActiveIdx, onClose, onOpenDetail }: {
+function SocialResultStrip({ mode, personEntries: personEntriesOverride, person, discoverEntries, activeIdx, setActiveIdx, onClose, onOpenDetail }: {
   mode: SocialTab;
+  personEntries?: MyListEntry[];
+  person?: { name: string; photo?: string; initial: string };
+  discoverEntries?: DiscoverEntry[];
   activeIdx: number;
   setActiveIdx: (i: number) => void;
   onClose: () => void;
@@ -602,6 +694,23 @@ function SocialResultStrip({ mode, activeIdx, setActiveIdx, onClose, onOpenDetai
   // otherwise the animate() call fights the user's scroll and feels glitchy.
   const userScrollIdxChange = useRef(false);
   const scrollSettleTimer = useRef<number | null>(null);
+  // Tracks whether the initial scroll position has been set — we jump
+  // directly on mount (useLayoutEffect, before paint) so the user never
+  // sees card 0 flash before the active card.
+  const skipFirstScrollEffect = useRef(true);
+
+  // Instantly position the scroller BEFORE the first paint so there is
+  // no flash of card 0. useLayoutEffect fires synchronously after React
+  // commits the DOM (refs are already set at this point) but before the
+  // browser paints, so scrollLeft is correct by the time anything is visible.
+  useLayoutEffect(() => {
+    const card = cardRefs.current[activeIdx];
+    const scroller = scrollerRef.current;
+    if (card && scroller) {
+      scroller.scrollLeft = card.offsetLeft - 16;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function lastBookedLabel(days: number): string {
     if (days === 1) return "yesterday";
@@ -611,7 +720,76 @@ function SocialResultStrip({ mode, activeIdx, setActiveIdx, onClose, onOpenDetai
     return `${Math.round(days / 7)} weeks ago`;
   }
 
-  const cards = mode === "friends"
+  const cards = discoverEntries
+    ? discoverEntries.map((entry) => {
+        const ov = entry.overlay;
+        let pillIcon: React.ReactNode;
+        let pillText: string | undefined;
+        let pillReturns: string | undefined;
+        if (ov?.returnBadge) {
+          pillReturns = `x${ov.returnCount ?? ""} ${ov.returnType ?? "friends"} returned here`;
+        } else if (ov?.avatarPhoto && ov.avatarName) {
+          pillIcon = (
+            <div style={{ width: 14, height: 14, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={ov.avatarPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+          );
+          pillText = `Recommended by ${ov.avatarName}`;
+        } else if (ov?.foodie) {
+          pillIcon = (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/images/Food legend.png" alt="" style={{ width: 12, height: 12, objectFit: "contain" }} />
+          );
+          pillText = `${ov.foodieCount ?? ""} foodies ate here`;
+        } else if (ov?.extraCount) {
+          pillText = `+${ov.extraCount} friends booked`;
+        }
+        return {
+          image: entry.restaurant.image,
+          title: entry.restaurant.name,
+          cuisine: entry.restaurant.cuisine,
+          topLine: entry.restaurant.signal ?? `${entry.restaurant.distance} away`,
+          rating: entry.restaurant.rating,
+          distance: entry.restaurant.distance,
+          deals: entry.restaurant.deals,
+          pillIcon,
+          pillText,
+          pillReturns,
+        };
+      })
+    : (personEntriesOverride && person)
+    ? personEntriesOverride.map((entry) => {
+        const personAvatar = (
+          <div
+            className="w-[14px] h-[14px] rounded-full overflow-hidden shrink-0 flex items-center justify-center"
+            style={{ background: person.photo ? undefined : "#53f293" }}
+          >
+            {person.photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={person.photo} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 8, fontWeight: 700, color: "#11301d", lineHeight: 1 }}>{person.initial}</span>
+            )}
+          </div>
+        );
+        return {
+          image: entry.restaurant.image,
+          title: entry.restaurant.name,
+          cuisine: entry.restaurant.cuisine,
+          topLine: `${person.name} ${entry.type === "visited" ? "visited" : "saved"}`,
+          rating: entry.restaurant.rating,
+          distance: entry.restaurant.distance,
+          deals: entry.restaurant.deals,
+          saved: entry.type === "saved",
+          pillIcon: personAvatar,
+          pillText: entry.type === "visited"
+            ? `Recommended by ${person.name}`
+            : `${person.name} saved`,
+          pillReturns: entry.hasReturn ? "returns" : undefined,
+        };
+      })
+    : mode === "friends"
     ? FRIEND_RESULT_CARDS.map((c) => ({
         image: c.restaurant.image, title: c.restaurant.name, cuisine: c.restaurant.cuisine,
         topLine: c.topLine ?? `${c.friendName} booked ${lastBookedLabel(c.lastVisitDays)}`,
@@ -633,7 +811,7 @@ function SocialResultStrip({ mode, activeIdx, setActiveIdx, onClose, onOpenDetai
         pillText:
           c.extraFriends && c.extraFriends > 0
             ? `${c.friendName} + ${c.extraFriends} other friend${c.extraFriends === 1 ? "" : "s"} booked`
-            : `${c.friendName} booked`,
+            : `Recommended by ${c.friendName}`,
         pillReturns: (() => {
           const m = c.badge?.match(/^x(\d+)/);
           return m ? `${m[1]}x returns` : undefined;
@@ -666,9 +844,14 @@ function SocialResultStrip({ mode, activeIdx, setActiveIdx, onClose, onOpenDetai
   // Uses motion's `animate` with an iOS-style easing curve for a smoother
   // feel than the browser's default scrollTo smooth behaviour.
   useEffect(() => {
+    // On the very first render the position was already set by useLayoutEffect
+    // — skip to avoid fighting with it.
+    if (skipFirstScrollEffect.current) {
+      skipFirstScrollEffect.current = false;
+      return;
+    }
     // If the active card changed because the user swiped to it, the scroll
-    // is already in the right place — running animate() here would fight
-    // their gesture and produce a visible jitter.
+    // is already in the right place — no need to do anything.
     if (userScrollIdxChange.current) {
       userScrollIdxChange.current = false;
       return;
@@ -676,22 +859,13 @@ function SocialResultStrip({ mode, activeIdx, setActiveIdx, onClose, onOpenDetai
     const card = cardRefs.current[activeIdx];
     const scroller = scrollerRef.current;
     if (!card || !scroller) return;
-    // Left-align card to match the filter chips' 16px gutter
+    // Instant jump — no animated scroll so the user sees the correct card
+    // immediately without passing through intermediate cards.
     const target = card.offsetLeft - 16;
     if (Math.abs(scroller.scrollLeft - target) < 4) return;
-
     programmaticScroll.current = true;
-    const controls = animate(scroller.scrollLeft, target, {
-      duration: 0.55,
-      ease: [0.32, 0.72, 0, 1],
-      onUpdate: (v) => { scroller.scrollLeft = v; },
-      onComplete: () => { programmaticScroll.current = false; },
-    });
-
-    return () => {
-      controls.stop();
-      programmaticScroll.current = false;
-    };
+    scroller.scrollLeft = target;
+    programmaticScroll.current = false;
   }, [activeIdx]);
 
   // Debounced scroll detection — only commit a new activeIdx once the
@@ -833,7 +1007,7 @@ function FilterChips({
         effectiveMode === "legends" ? "Local Foodies" :
         effectiveMode === "mylist"  ? "My list" :
         effectiveMode === "friends" ? "Friends" :
-                                       "Your circle";
+                                       "For you";
       const count =
         effectiveMode === "legends" ? LEGENDS_LIST.length :
         effectiveMode === "mylist"  ? MYLIST_ENTRIES.length :
@@ -904,7 +1078,7 @@ function FilterChips({
             key={chip.id}
             className={chipBase}
             style={chipStyle}
-            onClick={() => onFilterTap(chip.id)}
+            onClick={() => { if (chip.id === "friends") onFilterTap(chip.id); }}
           >
             <span className={iconCls}>{chip.icon}</span>
             <span
@@ -1119,10 +1293,78 @@ const LEGENDS_LIST: FriendPerson[] = [
   { initial: "O", name: "Oliver",   meta: "Visited 2 places • Saved 0 places",    isLegend: true },
 ];
 
+// Selected-person view ---------------------------------------------------------
+interface PersonView {
+  name: string;
+  initial: string;
+  photo?: string;
+  isLegend?: boolean;
+}
+
+// Roomy pin pool for person-view maps. The selected person can have up to
+// ~25 entries between visited + saved, so we need more positions than the
+// 6-pin MYLIST_MAP_PINS used for the user's own list.
+const PERSON_MAP_PINS = [
+  { x: 20, y: 38 }, { x: 38, y: 34 }, { x: 55, y: 38 }, { x: 70, y: 35 }, { x: 82, y: 40 },
+  { x: 14, y: 48 }, { x: 30, y: 45 }, { x: 48, y: 48 }, { x: 63, y: 46 }, { x: 78, y: 50 },
+  { x: 22, y: 57 }, { x: 40, y: 54 }, { x: 56, y: 58 }, { x: 72, y: 55 }, { x: 84, y: 60 },
+  { x: 18, y: 65 }, { x: 35, y: 63 }, { x: 52, y: 67 }, { x: 67, y: 64 }, { x: 80, y: 68 },
+  { x: 26, y: 73 }, { x: 44, y: 71 }, { x: 60, y: 74 }, { x: 10, y: 57 }, { x: 75, y: 42 },
+];
+
+// Person counts live in the meta string ("Visited N places • Saved M places")
+// so the chip and the list/map can stay in sync from a single source.
+function parsePersonCounts(meta: string): { visited: number; saved: number } {
+  const v = meta.match(/Visited\s+(\d+)/i);
+  const s = meta.match(/Saved\s+(\d+)/i);
+  return {
+    visited: v ? parseInt(v[1], 10) : 0,
+    saved:   s ? parseInt(s[1], 10) : 0,
+  };
+}
+
+// Build a restaurant list that honours the visited/saved counts from the
+// person's chip meta. Cycles through RESTAURANTS deterministically. Capped
+// to keep legends with 100+ places visually sane.
+function personListEntries(name: string): MyListEntry[] {
+  const person =
+    FRIENDS_LIST.find((p) => p.name === name) ??
+    LEGENDS_LIST.find((p) => p.name === name);
+  if (!person) return [];
+  const counts = parsePersonCounts(person.meta);
+  const cap = PERSON_MAP_PINS.length; // 25
+  const v = Math.min(counts.visited, cap);
+  const s = Math.min(counts.saved, Math.max(0, cap - v));
+  let seed = 0;
+  for (let i = 0; i < name.length; i++) seed = (seed * 31 + name.charCodeAt(i)) | 0;
+  seed = Math.abs(seed);
+  const start = seed % RESTAURANTS.length;
+  const out: MyListEntry[] = [];
+  for (let i = 0; i < v; i++) {
+    out.push({
+      restaurant: RESTAURANTS[(start + i) % RESTAURANTS.length],
+      type: "visited",
+      meta: "Visited",
+      hasReturn: i % 3 === 1,    // every 3rd visited place shows a return badge
+      isRecommended: i < 2,      // first 2 visited places show "Recommended by"
+    });
+  }
+  for (let i = 0; i < s; i++) {
+    out.push({
+      restaurant: RESTAURANTS[(start + v + i) % RESTAURANTS.length],
+      type: "saved",
+      meta: "Saved",
+    });
+  }
+  return out;
+}
+
 interface MyListEntry {
   restaurant: Restaurant;
   type: "visited" | "saved";
   meta: string;
+  hasReturn?: boolean;
+  isRecommended?: boolean;
 }
 
 const MYLIST_ENTRIES: MyListEntry[] = [
@@ -1186,30 +1428,31 @@ interface FriendResultCard {
   extraFriends?: number;
   groupText?: string;
   isLegend?: boolean;
+  rating?: number;
 }
 
 const FRIEND_RESULT_CARDS: FriendResultCard[] = [
-  { friendName: "Steve",  initial: "S", photo: "/images/Steve.jpg", visits: 2, restaurant: RESTAURANTS[0], lastVisitDays: 6,  quote: "Honestly the best coffee in Mitte. The lunch deal makes it a no-brainer.", badge: "x2 returns", favourited: true, isLegend: true },
-  { friendName: "Laura",  initial: "L", photo: "/images/Laura.jpg", visits: 1, restaurant: RESTAURANTS[1], lastVisitDays: 3,  quote: "Cosy spot. Great matcha and the cake was huge.",                          badge: "x1 returns", favourited: true  },
-  { friendName: "Kate",   initial: "K", photo: "/images/Kate.jpg",  visits: 3, restaurant: RESTAURANTS[2], lastVisitDays: 9,  quote: "I keep coming back for the flat white. Friendly staff too.",              badge: "x1 returns"                   },
-  { friendName: "Mia",    initial: "M", photo: "/images/Mia.jpg",   visits: 1, restaurant: RESTAURANTS[3], lastVisitDays: 12, quote: "Great for dates — the hummus is unreal.",                                                  favourited: true, topLine: "Mia and 2 more friends have booked here", extraFriends: 2, groupText: "Mia, Steve and Laura have all booked here" },
-  { friendName: "James",  initial: "J",                              visits: 2, restaurant: RESTAURANTS[4], lastVisitDays: 4,  quote: "Ramen is the real deal, gyoza was a nice bonus.",                        badge: "x3 returns"                   },
-  { friendName: "Sophie", initial: "S",                              visits: 4, restaurant: RESTAURANTS[5], lastVisitDays: 1,  quote: "Best snack run in Kreuzberg. The 10€ voucher goes a long way.",          badge: "x1 returns", favourited: true  },
-  { friendName: "Ryan",   initial: "R",                              visits: 1, restaurant: RESTAURANTS[0], lastVisitDays: 18, quote: "Solid morning coffee. Quiet spot to actually get work done."                                                   },
-  { friendName: "Emma",   initial: "E",                              visits: 2, restaurant: RESTAURANTS[3], lastVisitDays: 5,  quote: "Generous portions, fast service, good vibe.",                           badge: "x1 returns", favourited: true  },
+  { friendName: "Steve",  initial: "S", photo: "/images/Steve.jpg", visits: 2, restaurant: RESTAURANTS[0], lastVisitDays: 6,  quote: "Honestly the best coffee in Mitte. The lunch deal makes it a no-brainer.", badge: "x2 returns", favourited: true, isLegend: true, rating: 4.2 },
+  { friendName: "Laura",  initial: "L", photo: "/images/Laura.jpg", visits: 1, restaurant: RESTAURANTS[1], lastVisitDays: 3,  quote: "Cosy spot. Great matcha and the cake was huge.",                          badge: "x1 returns", favourited: true,               rating: 4.5 },
+  { friendName: "Kate",   initial: "K", photo: "/images/Kate.jpg",  visits: 3, restaurant: RESTAURANTS[2], lastVisitDays: 9,  quote: "I keep coming back for the flat white. Friendly staff too.",              badge: "x1 returns",                                rating: 4.3 },
+  { friendName: "Mia",    initial: "M", photo: "/images/Mia.jpg",   visits: 1, restaurant: RESTAURANTS[3], lastVisitDays: 12, quote: "Great for dates — the hummus is unreal.",                                                  favourited: true, topLine: "Mia and 2 more friends have booked here", extraFriends: 2, groupText: "Mia, Steve and Laura have all booked here", rating: 4.8 },
+  { friendName: "James",  initial: "J",                              visits: 2, restaurant: RESTAURANTS[4], lastVisitDays: 4,  quote: "Ramen is the real deal, gyoza was a nice bonus.",                        badge: "x3 returns",                                rating: 4.7 },
+  { friendName: "Sophie", initial: "S",                              visits: 4, restaurant: RESTAURANTS[5], lastVisitDays: 1,  quote: "Best snack run in Kreuzberg. The 10€ voucher goes a long way.",          badge: "x1 returns", favourited: true,               rating: 4.6 },
+  { friendName: "Ryan",   initial: "R",                              visits: 1, restaurant: RESTAURANTS[0], lastVisitDays: 18, quote: "Solid morning coffee. Quiet spot to actually get work done.",                                                              rating: 4.1 },
+  { friendName: "Emma",   initial: "E",                              visits: 2, restaurant: RESTAURANTS[3], lastVisitDays: 5,  quote: "Generous portions, fast service, good vibe.",                           badge: "x1 returns", favourited: true,               rating: 4.4 },
 ];
 
 const LEGEND_RESULT_CARDS = [
-  { booked: 28,  rebooked: 7,  restaurant: RESTAURANTS[0], lastVisitDays: 3,  quote: "This place is a weekly ritual for me — the coffee alone is worth the trip."       },
-  { booked: 7,   rebooked: 2,  restaurant: RESTAURANTS[1], lastVisitDays: 8,  quote: "Best matcha I've found in the city. The cake is generous too."                     },
-  { booked: 55,  rebooked: 12, restaurant: RESTAURANTS[2], lastVisitDays: 1,  quote: "Quiet, consistent, and the flat white is perfect every single time."               },
-  { booked: 34,  rebooked: 8,  restaurant: RESTAURANTS[3], lastVisitDays: 14, quote: "Great for a long lunch. The hummus board never disappoints."                        },
-  { booked: 25,  rebooked: 5,  restaurant: RESTAURANTS[4], lastVisitDays: 5,  quote: "The ramen here is legitimately the best in this part of town."                     },
-  { booked: 100, rebooked: 32, restaurant: RESTAURANTS[5], lastVisitDays: 2,  quote: "Incredible value with the deal. I've brought everyone I know here."                },
-  { booked: 3,   rebooked: 0,  restaurant: RESTAURANTS[0], lastVisitDays: 21, quote: "Solid spot for a morning coffee before work — never too busy early on."            },
-  { booked: 82,  rebooked: 21, restaurant: RESTAURANTS[1], lastVisitDays: 4,  quote: "The staff always remember my order. That's rare and I love it."                    },
-  { booked: 78,  rebooked: 19, restaurant: RESTAURANTS[2], lastVisitDays: 7,  quote: "Discovered this through the app and it's become my go-to neighbourhood spot."     },
-  { booked: 52,  rebooked: 11, restaurant: RESTAURANTS[3], lastVisitDays: 10, quote: "Portions are huge and the deal makes it an absolute no-brainer."                   },
+  { booked: 28,  rebooked: 7,  restaurant: RESTAURANTS[0], lastVisitDays: 3,  quote: "This place is a weekly ritual for me — the coffee alone is worth the trip.",    rating: 4.9 },
+  { booked: 7,   rebooked: 2,  restaurant: RESTAURANTS[1], lastVisitDays: 8,  quote: "Best matcha I've found in the city. The cake is generous too.",                  rating: 4.6 },
+  { booked: 55,  rebooked: 12, restaurant: RESTAURANTS[2], lastVisitDays: 1,  quote: "Quiet, consistent, and the flat white is perfect every single time.",            rating: 4.8 },
+  { booked: 34,  rebooked: 8,  restaurant: RESTAURANTS[3], lastVisitDays: 14, quote: "Great for a long lunch. The hummus board never disappoints.",                     rating: 4.7 },
+  { booked: 25,  rebooked: 5,  restaurant: RESTAURANTS[4], lastVisitDays: 5,  quote: "The ramen here is legitimately the best in this part of town.",                  rating: 5.0 },
+  { booked: 100, rebooked: 32, restaurant: RESTAURANTS[5], lastVisitDays: 2,  quote: "Incredible value with the deal. I've brought everyone I know here.",             rating: 4.8 },
+  { booked: 3,   rebooked: 0,  restaurant: RESTAURANTS[0], lastVisitDays: 21, quote: "Solid spot for a morning coffee before work — never too busy early on.",         rating: 4.3 },
+  { booked: 82,  rebooked: 21, restaurant: RESTAURANTS[1], lastVisitDays: 4,  quote: "The staff always remember my order. That's rare and I love it.",                 rating: 4.9 },
+  { booked: 78,  rebooked: 19, restaurant: RESTAURANTS[2], lastVisitDays: 7,  quote: "Discovered this through the app and it's become my go-to neighbourhood spot.",  rating: 4.7 },
+  { booked: 52,  rebooked: 11, restaurant: RESTAURANTS[3], lastVisitDays: 10, quote: "Portions are huge and the deal makes it an absolute no-brainer.",                rating: 4.6 },
 ];
 
 function PersonAvatar({ photo, initial }: { photo?: string; initial: string }) {
@@ -1227,16 +1470,19 @@ function PersonAvatar({ photo, initial }: { photo?: string; initial: string }) {
   );
 }
 
-function PersonRow({ person, showDivider }: { person: FriendPerson; showDivider: boolean }) {
+function PersonRow({ person, showDivider, onClick }: { person: FriendPerson; showDivider: boolean; onClick?: () => void }) {
   return (
     <div>
-      <div className="flex items-start justify-between py-[2px]">
+      <div
+        className={`flex items-start justify-between py-[2px] ${onClick ? "cursor-pointer active:opacity-80 transition-opacity" : ""}`}
+        onClick={onClick}
+      >
         <div className="flex items-center gap-[8px] flex-1 min-w-0">
           <PersonAvatar photo={person.photo} initial={person.initial} />
           <div className="flex flex-col gap-[4px] flex-1 min-w-0">
             <div className="flex items-center gap-[4px]">
               <span
-                className="text-[16px] font-semibold leading-[20px] text-[#11301d] whitespace-nowrap"
+                className="text-[16px] font-semibold leading-[20px] text-[#0a0a0a] whitespace-nowrap"
                 style={{ fontFamily: "Poppins, sans-serif" }}
               >
                 {person.name}
@@ -1244,7 +1490,7 @@ function PersonRow({ person, showDivider }: { person: FriendPerson; showDivider:
               {person.isLegend && <img src="/images/Food legend.png" alt="Local Foodie" className="w-[16px] h-[16px] object-contain" />}
             </div>
             <span
-              className="text-[12px] font-medium leading-[18px] text-[#11301d] whitespace-nowrap"
+              className="text-[12px] font-medium leading-[18px] text-[#737373] whitespace-nowrap"
               style={{ fontFamily: "Poppins, sans-serif" }}
             >
               {person.meta}
@@ -1282,37 +1528,83 @@ function MyListRestaurantRow({ restaurant, meta, type, showDivider }: {
   type: "visited" | "saved";
   showDivider: boolean;
 }) {
+  const [recommendation, setRecommendation] = useState<"yes" | "no" | null>(null);
+
   return (
     <>
-      <div className="flex items-center gap-[12px] py-[8px]">
-        <div className="w-[56px] h-[56px] rounded-[12px] overflow-hidden shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
-        </div>
-        <div className="flex flex-col gap-[2px] flex-1 min-w-0">
-          <p
-            className="text-[14px] font-semibold leading-[18px] text-[#0a0a0a] truncate"
-            style={{ fontFamily: "Poppins, sans-serif" }}
-          >
-            {restaurant.name}
-          </p>
-          <p
-            className="text-[12px] font-medium leading-[18px] text-[#737373]"
-            style={{ fontFamily: "Poppins, sans-serif" }}
-          >
-            {meta} · {restaurant.cuisine}
-          </p>
-          <div className="flex items-center gap-[4px]">
-            <Star size={11} fill="#fcd413" className="text-[#fcd413] shrink-0" />
-            <span className="text-[11px] font-medium text-[#737373]" style={{ fontFamily: "Poppins, sans-serif" }}>
-              {restaurant.rating.toFixed(1).replace(".", ",")} ({restaurant.reviewCount}) · {restaurant.distance}
-            </span>
+      <div>
+        {/* Restaurant info row */}
+        <div className="flex items-center gap-[12px] py-[8px]">
+          <div className="w-[56px] h-[56px] rounded-[12px] overflow-hidden shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
           </div>
+          <div className="flex flex-col gap-[2px] flex-1 min-w-0">
+            <p
+              className="text-[14px] font-semibold leading-[18px] text-[#0a0a0a] truncate"
+              style={{ fontFamily: "Poppins, sans-serif" }}
+            >
+              {restaurant.name}
+            </p>
+            <p
+              className="text-[12px] font-medium leading-[18px] text-[#737373]"
+              style={{ fontFamily: "Poppins, sans-serif" }}
+            >
+              {meta} · {restaurant.cuisine}
+            </p>
+            <div className="flex items-center gap-[4px]">
+              <Star size={11} fill="#fcd413" className="text-[#fcd413] shrink-0" />
+              <span className="text-[11px] font-medium text-[#737373]" style={{ fontFamily: "Poppins, sans-serif" }}>
+                {restaurant.rating.toFixed(1).replace(".", ",")} ({restaurant.reviewCount}) · {restaurant.distance}
+              </span>
+            </div>
+          </div>
+          {type === "visited" ? (
+            <Check size={18} strokeWidth={2.5} className="text-[#11301d] shrink-0" />
+          ) : (
+            <Heart size={18} className="text-[#53f293] shrink-0" fill="#53f293" />
+          )}
         </div>
-        {type === "visited" ? (
-          <Check size={18} strokeWidth={2.5} className="text-[#11301d] shrink-0" />
-        ) : (
-          <Heart size={18} className="text-[#53f293] shrink-0" fill="#53f293" />
+
+        {/* Recommendation prompt — visited only */}
+        {type === "visited" && (
+          <div className="pb-[10px]">
+            {recommendation === null ? (
+              <div className="flex items-center justify-between gap-[8px]">
+                <span className="text-[12px] font-medium text-[#737373] leading-[16px]" style={{ fontFamily: "Poppins, sans-serif" }}>
+                  Would you recommend to a friend?
+                </span>
+                <div className="flex items-center gap-[6px] shrink-0">
+                  <button
+                    onClick={() => setRecommendation("yes")}
+                    className="flex items-center gap-[4px] px-[10px] py-[5px] rounded-full active:scale-95 transition-transform"
+                    style={{ border: "1px solid rgba(0,0,0,0.12)", background: "#fff" }}
+                  >
+                    <span style={{ fontSize: 13 }}>👍</span>
+                    <span className="text-[12px] font-semibold text-[#0a0a0a]" style={{ fontFamily: "Poppins, sans-serif" }}>Yes</span>
+                  </button>
+                  <button
+                    onClick={() => setRecommendation("no")}
+                    className="flex items-center gap-[4px] px-[10px] py-[5px] rounded-full active:scale-95 transition-transform"
+                    style={{ border: "1px solid rgba(0,0,0,0.12)", background: "#fff" }}
+                  >
+                    <span style={{ fontSize: 13 }}>👎</span>
+                    <span className="text-[12px] font-semibold text-[#0a0a0a]" style={{ fontFamily: "Poppins, sans-serif" }}>No</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-[6px]">
+                <span style={{ fontSize: 13 }}>{recommendation === "yes" ? "👍" : "👎"}</span>
+                <span
+                  className="text-[12px] font-semibold leading-[16px]"
+                  style={{ fontFamily: "Poppins, sans-serif", color: recommendation === "yes" ? "#11301d" : "#737373" }}
+                >
+                  {recommendation === "yes" ? "You'd recommend this!" : "You wouldn't recommend this"}
+                </span>
+              </div>
+            )}
+          </div>
         )}
       </div>
       {showDivider && <div className="h-px w-full bg-[rgba(0,0,0,0.05)]" />}
@@ -1500,7 +1792,7 @@ function MyListShareSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
-function SocialTabContent({ tab, radius, onRadiusChange }: { tab: SocialTab; radius: number; onRadiusChange: (v: number) => void }) {
+function SocialTabContent({ tab, radius, onRadiusChange, onSelectPerson }: { tab: SocialTab; radius: number; onRadiusChange: (v: number) => void; onSelectPerson: (p: PersonView) => void }) {
   const [shareOpen, setShareOpen] = useState(false);
   const [myListFilter, setMyListFilter] = useState<"all" | "visited" | "saved">("all");
 
@@ -1516,7 +1808,12 @@ function SocialTabContent({ tab, radius, onRadiusChange }: { tab: SocialTab; rad
           Your friends
         </p>
         {FRIENDS_LIST.map((p, i) => (
-          <PersonRow key={p.name} person={p} showDivider={i < FRIENDS_LIST.length - 1} />
+          <PersonRow
+            key={p.name}
+            person={p}
+            showDivider={i < FRIENDS_LIST.length - 1}
+            onClick={() => onSelectPerson({ name: p.name, initial: p.initial, photo: p.photo, isLegend: p.isLegend })}
+          />
         ))}
       </div>
     );
@@ -1534,7 +1831,12 @@ function SocialTabContent({ tab, radius, onRadiusChange }: { tab: SocialTab; rad
           Top local foodies in your area who have tried over 100 restaurants
         </p>
         {LEGENDS_LIST.map((p, i) => (
-          <PersonRow key={p.name} person={p} showDivider={i < LEGENDS_LIST.length - 1} />
+          <PersonRow
+            key={p.name}
+            person={p}
+            showDivider={i < LEGENDS_LIST.length - 1}
+            onClick={() => onSelectPerson({ name: p.name, initial: p.initial, photo: p.photo, isLegend: true })}
+          />
         ))}
       </div>
     );
@@ -1675,7 +1977,7 @@ function SocialTabContent({ tab, radius, onRadiusChange }: { tab: SocialTab; rad
   );
 }
 
-function SocialSheet({ open, onClose, onShowResults, onReset }: { open: boolean; onClose: () => void; onShowResults: (tab: SocialTab, radius: number) => void; onReset: () => void }) {
+function SocialSheet({ open, onClose, onShowResults, onReset, onSelectPerson }: { open: boolean; onClose: () => void; onShowResults: (tab: SocialTab, radius: number) => void; onReset: () => void; onSelectPerson: (p: PersonView) => void }) {
   const [tab, setTab] = useState<SocialTab>("friends");
   const [radius, setRadius] = useState(5);
 
@@ -1732,7 +2034,7 @@ function SocialSheet({ open, onClose, onShowResults, onReset }: { open: boolean;
                   Friends and foodies
                 </h2>
                 <p
-                  className="text-[14px] font-medium leading-[20px] text-[#0a0a0a] mt-[4px]"
+                  className="text-[14px] font-medium leading-[20px] text-[#737373] mt-[4px]"
                   style={{ fontFamily: "Poppins, sans-serif" }}
                 >
                   See where your friends and local foodies are eating
@@ -1772,7 +2074,7 @@ function SocialSheet({ open, onClose, onShowResults, onReset }: { open: boolean;
                         {t.label}
                       </span>
                       <span
-                        className="text-[11px] font-medium leading-[16px] text-[rgba(0,0,0,0.7)] whitespace-nowrap"
+                        className="text-[11px] font-medium leading-[16px] text-[#737373] whitespace-nowrap"
                         style={{ fontFamily: "Poppins, sans-serif" }}
                       >
                         {t.sub}
@@ -1788,7 +2090,7 @@ function SocialSheet({ open, onClose, onShowResults, onReset }: { open: boolean;
               className="overflow-y-auto flex-1 px-[16px] pt-[12px]"
               style={{ overscrollBehavior: "contain" }}
             >
-              <SocialTabContent tab={tab} radius={radius} onRadiusChange={setRadius} />
+              <SocialTabContent tab={tab} radius={radius} onRadiusChange={setRadius} onSelectPerson={onSelectPerson} />
               {/* Bottom padding so content clears footer */}
               <div className="h-[8px]" />
             </div>
@@ -1831,7 +2133,7 @@ const FULL_OFFSET = 120; // distance from top of screen when fully expanded
 
 type SheetState = "peek" | "mid" | "expanded";
 
-function BottomSheet({ tabBarHeight, socialResultMode, onOpenDetail }: { tabBarHeight: number; socialResultMode: SocialTab | null; onOpenDetail: (restaurant: Restaurant) => void }) {
+function BottomSheet({ tabBarHeight, socialResultMode, selectedPerson, personEntries, onOpenDetail }: { tabBarHeight: number; socialResultMode: SocialTab | null; selectedPerson: PersonView | null; personEntries: MyListEntry[] | null; onOpenDetail: (restaurant: Restaurant) => void }) {
   const y = useMotionValue(0);
   const [sheetState, setSheetState] = useState<SheetState>("mid");
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -1842,6 +2144,7 @@ function BottomSheet({ tabBarHeight, socialResultMode, onOpenDetail }: { tabBarH
   // Deduped by restaurant id so a restaurant doesn't appear multiple times
   // when several friends/legends have booked the same place.
   const items: Restaurant[] = (() => {
+    if (selectedPerson && personEntries) return personEntries.map((e) => e.restaurant);
     const dedupe = (list: Restaurant[]) => {
       const seen = new Set<string>();
       return list.filter((r) => {
@@ -1885,7 +2188,7 @@ function BottomSheet({ tabBarHeight, socialResultMode, onOpenDetail }: { tabBarH
       </div>
     );
     return {
-      text: `${namesText} booked`,
+      text: (namesText === "Kate" || namesText === "Laura" || namesText === "James") ? `Recommended by ${namesText}` : `${namesText} booked`,
       returns: total > 0 ? `${total}x returns` : undefined,
       icon,
     };
@@ -1912,7 +2215,29 @@ function BottomSheet({ tabBarHeight, socialResultMode, onOpenDetail }: { tabBarH
   // "🔥 N booked / Last booked X ago" signal. In filter modes every item gets
   // the matching social signal; in the default browse list two items are
   // highlighted to preview the social data.
-  function socialOverride(restaurant: Restaurant) {
+  function socialOverride(restaurant: Restaurant, index?: number) {
+    if (selectedPerson && personEntries) {
+      const entry = personEntries[index ?? 0];
+      if (!entry) return null;
+      const icon = (
+        <div
+          className="w-[14px] h-[14px] rounded-full overflow-hidden shrink-0 flex items-center justify-center"
+          style={{ background: selectedPerson.photo ? undefined : "#53f293" }}
+        >
+          {selectedPerson.photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={selectedPerson.photo} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span style={{ fontFamily: "Poppins, sans-serif", fontSize: 8, fontWeight: 700, color: "#11301d", lineHeight: 1 }}>{selectedPerson.initial}</span>
+          )}
+        </div>
+      );
+      return {
+        icon,
+        text: `${selectedPerson.name} ${entry.type === "visited" ? "visited" : "saved"}`,
+        returns: undefined,
+      };
+    }
     if (socialResultMode === "friends") return friendSignal(restaurant);
     if (socialResultMode === "legends") return legendSignal(restaurant);
     if (socialResultMode === null) {
@@ -1923,11 +2248,15 @@ function BottomSheet({ tabBarHeight, socialResultMode, onOpenDetail }: { tabBarH
   }
 
   const resultCount =
+    selectedPerson && personEntries ? personEntries.length :
     socialResultMode === "friends" ? 23 :
     socialResultMode === "legends" ? 31 :
     socialResultMode === "mylist"  ? MYLIST_ENTRIES.length :
     0;
-  const heading = socialResultMode ? `${resultCount} results` : "Browse all deals";
+  const heading =
+    selectedPerson ? `${selectedPerson.name}'s places · ${resultCount}` :
+    socialResultMode ? `${resultCount} results` :
+    "Browse all deals";
 
   const sheetHeight: Record<SheetState, string> = {
     peek:     `${tabBarHeight + 24}px`,
@@ -2011,10 +2340,10 @@ function BottomSheet({ tabBarHeight, socialResultMode, onOpenDetail }: { tabBarH
         }}
       >
         {items.map((r, i) => {
-          const override = socialOverride(r);
+          const override = socialOverride(r, i);
           return (
             <RestaurantListItem
-              key={r.id}
+              key={`${r.id}-${i}`}
               restaurant={r}
               showDivider={i < items.length - 1}
               signalOverride={override?.text}
@@ -2156,7 +2485,17 @@ export default function DiscoverPage() {
   const [mapRadius, setMapRadius] = useState<number | null>(null);
   const [activeCardIdx, setActiveCardIdx] = useState(0);
   const [pinSelected, setPinSelected] = useState(false);
+  const [personPinSelected, setPersonPinSelected] = useState(false);
+  const [discoverPinSelected, setDiscoverPinSelected] = useState(false);
   const [detail, setDetail] = useState<DetailContext | null>(null);
+  // When set, the map + list scope down to a single person's visited/saved
+  // restaurants. Driven by tapping a row inside the SocialSheet.
+  const [selectedPerson, setSelectedPerson] = useState<PersonView | null>(null);
+  // Entries for the currently selected person — synthesised deterministically.
+  const personEntries = useMemo(
+    () => selectedPerson ? personListEntries(selectedPerson.name) : null,
+    [selectedPerson]
+  );
 
   function handleOpenDetailForRestaurant(restaurant: Restaurant) {
     // Match the list view's social-signal rules so clicking a card that shows
@@ -2199,6 +2538,7 @@ export default function DiscoverPage() {
           badge: card.badge,
           groupText: card.groupText,
           isLegend: card.isLegend,
+          rating: card.rating,
         },
       });
       return;
@@ -2218,6 +2558,7 @@ export default function DiscoverPage() {
           quote: card.quote,
           badge: card.rebooked > 0 ? `x${card.rebooked} returns` : undefined,
           isLegend: true,
+          rating: card.rating,
         } : undefined,
       });
       return;
@@ -2243,6 +2584,7 @@ export default function DiscoverPage() {
     setMapRadius(tab === "mylist" ? null : radius);
     setActiveCardIdx(0);
     setPinSelected(false);
+    setSelectedPerson(null);
     setFriendsSheetOpen(false);
     setActiveFilter("friends");
   }
@@ -2262,6 +2604,20 @@ export default function DiscoverPage() {
     setPinSelected(false);
     setFriendsSheetOpen(false);
     setDetail(null);
+    setSelectedPerson(null);
+  }
+
+  function handleSelectPerson(person: PersonView) {
+    setSelectedPerson(person);
+    setFriendsSheetOpen(false);
+    setActiveCardIdx(0);
+    setPinSelected(false);
+    setActiveFilter("friends");
+    // Person view shows places without the radius circle — keep the map clean.
+    setMapRadius(null);
+    // Set the social mode to the person's category so the chip reads
+    // "Friends" or "Local Foodies" rather than the person's name.
+    setSocialResultMode(person.isLegend ? "legends" : "friends");
   }
 
   return (
@@ -2314,7 +2670,7 @@ export default function DiscoverPage() {
 
       {/* Map pins */}
       <div className="absolute inset-0 z-10 pointer-events-none">
-        {socialResultMode === "friends" && FRIEND_MAP_PINS.map((pin, i) => (
+        {socialResultMode === "friends" && !selectedPerson && FRIEND_MAP_PINS.map((pin, i) => (
           <FriendMapPin
             key={i}
             x={pin.x} y={pin.y}
@@ -2326,7 +2682,7 @@ export default function DiscoverPage() {
             onClick={() => { setActiveCardIdx(i); setPinSelected(true); }}
           />
         ))}
-        {socialResultMode === "legends" && LEGEND_MAP_PINS.map((pin, i) => (
+        {socialResultMode === "legends" && !selectedPerson && LEGEND_MAP_PINS.map((pin, i) => (
           <LegendMapPin
             key={i}
             x={pin.x} y={pin.y}
@@ -2345,9 +2701,41 @@ export default function DiscoverPage() {
             onClick={() => { setActiveCardIdx(i); setPinSelected(true); }}
           />
         ))}
-        {!socialResultMode && MAP_PINS.map((pin, i) => (
-          <NeoPin key={i} x={pin.x} y={pin.y} />
-        ))}
+        {/* Person view — always use FriendMapPin so the selected person's
+            avatar appears on every pin, with heart badge for saved places
+            and return badge for restaurants they've been back to. */}
+        {selectedPerson && personEntries && personEntries.map((entry, i) => {
+          const pin = PERSON_MAP_PINS[i % PERSON_MAP_PINS.length];
+          return (
+            <FriendMapPin
+              key={i}
+              x={pin.x} y={pin.y}
+              person={{ photo: selectedPerson.photo, initial: selectedPerson.initial }}
+              hasReturnVisit={entry.hasReturn ?? false}
+              hasFavourited={entry.type === "saved"}
+              active={i === activeCardIdx}
+              onClick={() => { setActiveCardIdx(i); setPersonPinSelected(true); }}
+            />
+          );
+        })}
+        {!socialResultMode && !selectedPerson && MAP_PINS.map((pin, i) => {
+          const ov = MAP_PIN_OVERLAYS[i];
+          const badge = ov?.returnBadge ? (
+            <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff592", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <img src="/images/Return_visits.png" alt="" style={{ width: 8, height: 8, objectFit: "contain" }} />
+            </div>
+          ) : ov?.foodie ? (
+            <div style={{ width: 14, height: 14, borderRadius: "50%", background: "white", border: "1.5px solid rgba(0,0,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <img src="/images/Food legend.png" alt="" style={{ width: 9, height: 9, objectFit: "contain" }} />
+            </div>
+          ) : undefined;
+          const badgeLeft = ov?.avatarPhoto ? (
+            <div style={{ width: 14, height: 14, borderRadius: "50%", overflow: "hidden", border: "1.5px solid white" }}>
+              <img src={ov.avatarPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+          ) : undefined;
+          return <NeoPin key={i} x={pin.x} y={pin.y} badge={badge} badgeLeft={badgeLeft} extraCount={ov?.extraCount} active={i === activeCardIdx && discoverPinSelected} onClick={() => { setActiveCardIdx(i); setDiscoverPinSelected(true); }} />;
+        })}
       </div>
 
       {/* Status bar */}
@@ -2393,10 +2781,12 @@ export default function DiscoverPage() {
 
       {/* Bottom sheet — hidden only when a pin is actively selected in social
           result mode (the SocialResultStrip takes its place). */}
-      {!(socialResultMode && pinSelected) && (
+      {!(socialResultMode && pinSelected) && !discoverPinSelected && (
         <BottomSheet
           tabBarHeight={TAB_BAR_HEIGHT}
           socialResultMode={socialResultMode}
+          selectedPerson={selectedPerson}
+          personEntries={personEntries}
           onOpenDetail={handleOpenDetailForRestaurant}
         />
       )}
@@ -2410,6 +2800,43 @@ export default function DiscoverPage() {
             setActiveIdx={setActiveCardIdx}
             onClose={() => setPinSelected(false)}
             onOpenDetail={handleOpenDetail}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Person-view popup cards — shown when a pin is tapped on an individual friend/foodie map */}
+      <AnimatePresence>
+        {selectedPerson && personEntries && personPinSelected && (
+          <SocialResultStrip
+            key="person-view-strip"
+            mode="mylist"
+            personEntries={personEntries}
+            person={selectedPerson}
+            activeIdx={activeCardIdx}
+            setActiveIdx={setActiveCardIdx}
+            onClose={() => setPersonPinSelected(false)}
+            onOpenDetail={(idx) => {
+              const entry = personEntries[idx];
+              if (entry) setDetail({ restaurant: entry.restaurant });
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Discover pin popup cards — shown when a default map pin is tapped */}
+      <AnimatePresence>
+        {discoverPinSelected && !socialResultMode && !selectedPerson && (
+          <SocialResultStrip
+            key="discover-strip"
+            mode="friends"
+            discoverEntries={MAP_DISCOVER_ENTRIES}
+            activeIdx={activeCardIdx}
+            setActiveIdx={setActiveCardIdx}
+            onClose={() => setDiscoverPinSelected(false)}
+            onOpenDetail={(idx) => {
+              const entry = MAP_DISCOVER_ENTRIES[idx];
+              if (entry) setDetail({ restaurant: entry.restaurant });
+            }}
           />
         )}
       </AnimatePresence>
@@ -2430,6 +2857,7 @@ export default function DiscoverPage() {
         open={friendsSheetOpen}
         onClose={() => { setFriendsSheetOpen(false); setActiveFilter(null); }}
         onShowResults={handleShowResults}
+        onSelectPerson={handleSelectPerson}
         onReset={handleResetFilters}
       />
 

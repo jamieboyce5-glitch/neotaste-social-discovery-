@@ -1,7 +1,8 @@
 "use client";
 
-import { motion } from "motion/react";
-import { Gift, RotateCcw, ChevronRight, UserPlus } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Gift, RotateCcw, ChevronRight, UserPlus, MessageCircle, Share2, Link, Copy } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -100,19 +101,126 @@ function NeoTasteLogo() {
 function TicketDivider() {
   return (
     <div className="relative flex items-center w-full my-[4px]">
-      {/* Left punch */}
+      {/* Left punch — centered on the card edge so overflow-hidden clips the outer half */}
       <div
-        className="absolute -left-[16px] w-[12px] h-[12px] rounded-full shrink-0"
+        className="absolute -left-[24px] w-[16px] h-[16px] rounded-full shrink-0"
         style={{ background: "#fefefe" }}
       />
       {/* Dashed line */}
       <div className="flex-1 border-t border-dashed" style={{ borderColor: "rgba(0,0,0,0.15)" }} />
       {/* Right punch */}
       <div
-        className="absolute -right-[16px] w-[12px] h-[12px] rounded-full shrink-0"
+        className="absolute -right-[24px] w-[16px] h-[16px] rounded-full shrink-0"
         style={{ background: "#fefefe" }}
       />
     </div>
+  );
+}
+
+// ─── Bring someone share sheet ────────────────────────────────────────────────
+
+function BringSomeoneSheet({ restaurantName, onClose }: { restaurantName: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  const shareOptions = [
+    { icon: MessageCircle, label: "iMessage",  color: "#34C759" },
+    { icon: Share2,        label: "WhatsApp",  color: "#25D366" },
+    { icon: Link,          label: "Copy link", color: "#11301d", action: () => { setCopied(true); setTimeout(() => setCopied(false), 2000); } },
+    { icon: Share2,        label: "More",      color: "#737373" },
+  ];
+
+  return (
+    <>
+      {/* Scrim */}
+      <motion.div
+        className="absolute inset-0 z-[70]"
+        style={{ background: "rgba(0,0,0,0.45)" }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+      {/* Sheet */}
+      <motion.div
+        className="absolute bottom-0 left-0 right-0 z-[71] rounded-t-[24px] overflow-hidden"
+        style={{ background: "#fff" }}
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 30, stiffness: 280 }}
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-[10px] pb-[4px]">
+          <div className="w-[36px] h-[4px] rounded-full bg-[rgba(0,0,0,0.15)]" />
+        </div>
+
+        <div className="px-[20px] pt-[8px] pb-[8px]">
+          <p className="text-[18px] font-bold text-[#0a0a0a] text-center leading-[24px]"
+            style={{ fontFamily: "Poppins, sans-serif" }}>
+            Send them a heads up
+          </p>
+          <p className="text-[13px] font-medium text-[#737373] text-center leading-[18px] mt-[2px]"
+            style={{ fontFamily: "Poppins, sans-serif" }}>
+            Let your guest know you&apos;re heading to {restaurantName}
+          </p>
+        </div>
+
+        {/* Preview card */}
+        <div className="mx-[20px] mb-[20px] rounded-[16px] p-[14px] flex items-center gap-[12px]"
+          style={{ background: "#f5f5f5" }}>
+          <div
+            className="w-[40px] h-[40px] rounded-full flex items-center justify-center shrink-0"
+            style={{ background: "#bafad4" }}
+          >
+            <UserPlus size={18} style={{ color: "#11301d" }} />
+          </div>
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-[14px] font-semibold text-[#0a0a0a] leading-[18px] truncate"
+              style={{ fontFamily: "Poppins, sans-serif" }}>
+              Bringing someone to {restaurantName}
+            </span>
+            <span className="text-[12px] font-medium text-[#737373] leading-[16px]"
+              style={{ fontFamily: "Poppins, sans-serif" }}>
+              It&apos;s a 2for1 — share this deal
+            </span>
+          </div>
+          <ChevronRight size={16} className="shrink-0 text-[#737373]" />
+        </div>
+
+        {/* Share options */}
+        <div className="grid grid-cols-4 gap-[8px] px-[20px] mb-[24px]">
+          {shareOptions.map(({ icon: Icon, label, color, action }) => (
+            <button
+              key={label}
+              onClick={() => { action?.(); }}
+              className="flex flex-col items-center gap-[8px] active:scale-95 transition-transform"
+            >
+              <div
+                className="w-[56px] h-[56px] rounded-[16px] flex items-center justify-center"
+                style={{ background: label === "Copy link" && copied ? "#53f293" : "#f5f5f5" }}
+              >
+                <Icon size={24} style={{ color: label === "Copy link" && copied ? "#11301d" : color }} />
+              </div>
+              <span className="text-[12px] font-medium text-[#0a0a0a] text-center leading-[15px]"
+                style={{ fontFamily: "Poppins, sans-serif" }}>
+                {label === "Copy link" && copied ? "Copied!" : label}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Cancel */}
+        <div className="px-[20px] pb-[40px]">
+          <button
+            onClick={onClose}
+            className="w-full py-[14px] rounded-[14px] text-[16px] font-semibold active:opacity-70 transition-opacity"
+            style={{ background: "#f5f5f5", color: "#0a0a0a", fontFamily: "Poppins, sans-serif" }}
+          >
+            Cancel
+          </button>
+        </div>
+      </motion.div>
+    </>
   );
 }
 
@@ -125,6 +233,8 @@ export function BookingConfirmation({
   onSeeBooking,
   onContinue,
 }: BookingConfirmationProps) {
+  const [shareOpen, setShareOpen] = useState(false);
+
   return (
     <motion.div
       className="absolute inset-0 z-[60] flex flex-col overflow-hidden"
@@ -310,18 +420,20 @@ export function BookingConfirmation({
                 </div>
 
                 {/* Separator */}
-                <div className="mt-[12px] mb-[12px]" style={{ height: 1, background: "rgba(0,0,0,0.05)" }} />
+                <div className="mt-[12px]" style={{ height: 1, background: "rgba(0,0,0,0.05)" }} />
 
-                {/* Bringing someone row */}
+                {/* Bringing someone — highlighted row */}
                 <button
-                  className="flex items-center gap-[10px] w-full active:opacity-70 transition-opacity"
+                  onClick={() => setShareOpen(true)}
+                  className="flex items-center gap-[10px] w-full mt-[10px] rounded-[12px] px-[12px] py-[10px] active:opacity-70 transition-opacity"
+                  style={{ background: "#f5f5f5" }}
                 >
                   {/* Circle + icon */}
                   <div
-                    className="w-[28px] h-[28px] rounded-full flex items-center justify-center shrink-0 border-[1.5px] border-dashed"
+                    className="w-[32px] h-[32px] rounded-full flex items-center justify-center shrink-0 border-[1.5px] border-dashed"
                     style={{ borderColor: "rgba(17,48,29,0.4)" }}
                   >
-                    <UserPlus size={13} style={{ color: "#11301d" }} />
+                    <UserPlus size={14} style={{ color: "#11301d" }} />
                   </div>
                   <div className="flex-1 min-w-0 text-left">
                     <p
@@ -341,7 +453,7 @@ export function BookingConfirmation({
                         fontWeight: 500,
                         fontSize: 12,
                         lineHeight: "18px",
-                        color: "#11301d",
+                        color: "rgba(17,48,29,0.6)",
                       }}
                     >
                       It&apos;s a 2for1, send them a heads up
@@ -383,6 +495,16 @@ export function BookingConfirmation({
           </button>
         </div>
       </div>
+
+      {/* Bring someone share sheet */}
+      <AnimatePresence>
+        {shareOpen && (
+          <BringSomeoneSheet
+            restaurantName={restaurantName}
+            onClose={() => setShareOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
