@@ -613,7 +613,7 @@ function SocialResultCard({
         </div>
         {/* Bottom social pills — mirrors the list view's grey + yellow combo */}
         {usePills && (
-          <div className="flex items-center gap-[4px] mt-[6px] overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-[4px] mt-[6px] overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: "touch" as never, touchAction: "pan-x" }}>
             {pillText && (
               <div
                 className="inline-flex items-center gap-[4px] rounded-[10px] shrink-0"
@@ -1160,7 +1160,7 @@ function RestaurantListItem({
           {/* Recency signal pill + optional yellow returns pill — heights
               matched, kept on a single row (returns badge never wraps below). */}
           {(signal || returnsBadge) && (
-            <div className="flex items-center gap-[4px] overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-[4px] overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: "touch" as never, touchAction: "pan-x" }}>
               {signal && (
                 <div
                   className="inline-flex items-center gap-[4px] rounded-[10px] shrink-0"
