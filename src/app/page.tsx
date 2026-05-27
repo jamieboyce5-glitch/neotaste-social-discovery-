@@ -129,46 +129,27 @@ const MAP_PINS = [
   { x: 45, y: 18 }, { x: 75, y: 18 }, { x: 48, y: 74 },
 ];
 
-// Social-signal overlays shown on the default (no-filter) map to tease the
-// friends / foodies data. Each key is the MAP_PINS index.
+// "Top for you" pins — 6 pins selected based on strongest social signals
+// (friend recommendation, return visits, group bookings). Each entry carries
+// the human-readable reason shown in the popup card so the user understands
+// why Neotaste surfaced this place for them.
 const MAP_PIN_OVERLAYS: Record<number, {
-  returnBadge?: boolean;
-  returnCount?: number;
-  returnType?: "friends" | "foodies";
-  extraCount?: number;
-  avatarPhoto?: string;
-  avatarInitial?: string;
-  avatarName?: string;
-  foodie?: boolean;
-  foodieCount?: number;
+  topForYou?: boolean;
+  topForYouReason?: string;
 }> = {
-  2:  { returnBadge: true, returnCount: 2,  returnType: "friends"  },
-  7:  { returnBadge: true, returnCount: 4,  returnType: "friends"  },
-  17: { returnBadge: true, returnCount: 25, returnType: "foodies"  },
-  25: { returnBadge: true, returnCount: 3,  returnType: "friends"  },
-  4:  { extraCount: 2 },
-  14: { extraCount: 4 },
-  0:  { avatarPhoto: "/images/Steve.jpg",  avatarInitial: "S", avatarName: "Steve" },
-  11: { avatarPhoto: "/images/Laura.jpg",  avatarInitial: "L", avatarName: "Laura" },
-  22: { avatarPhoto: "/images/Mia.jpg",    avatarInitial: "M", avatarName: "Mia" },
-  5:  { foodie: true, foodieCount: 26 },
-  10: { foodie: true, foodieCount: 51 },
-  20: { foodie: true, foodieCount: 38 },
-  28: { foodie: true, foodieCount: 14 },
+  0:  { topForYou: true, topForYouReason: "Steve recommended this to you" },
+  2:  { topForYou: true, topForYouReason: "2 of your friends returned here" },
+  7:  { topForYou: true, topForYouReason: "4 of your friends returned here" },
+  11: { topForYou: true, topForYouReason: "Laura recommended this to you" },
+  14: { topForYou: true, topForYouReason: "4 of your friends have been here" },
+  22: { topForYou: true, topForYouReason: "Mia recommended this to you" },
 };
 
 interface DiscoverEntry {
   restaurant: Restaurant;
   overlay?: {
-    returnBadge?: boolean;
-    returnCount?: number;
-    returnType?: "friends" | "foodies";
-    extraCount?: number;
-    avatarPhoto?: string;
-    avatarInitial?: string;
-    avatarName?: string;
-    foodie?: boolean;
-    foodieCount?: number;
+    topForYou?: boolean;
+    topForYouReason?: string;
   };
 }
 
@@ -314,15 +295,15 @@ function NeoPin({ x, y, badge, badgeLeft, extraCount, active, onClick }: {
           }}
         />
       </div>
-      {badge     && <div style={{ position: "absolute", top: -4, right: -6, zIndex: 2 }}>{badge}</div>}
-      {badgeLeft && <div style={{ position: "absolute", top: -4, left: -6,  zIndex: 2 }}>{badgeLeft}</div>}
+      {badge     && <div style={{ position: "absolute", top: -6, right: -6, zIndex: 2 }}>{badge}</div>}
+      {badgeLeft && <div style={{ position: "absolute", top: -6, left: -6,  zIndex: 2 }}>{badgeLeft}</div>}
       {(extraCount ?? 0) > 0 && (
         <div style={{
-          position: "absolute", bottom: 6, right: -16, zIndex: 2,
+          position: "absolute", bottom: 6, right: -20, zIndex: 2,
           background: "#11301d", borderRadius: 99, border: "1.5px solid white",
-          padding: "2px 5px", display: "inline-flex", alignItems: "center", justifyContent: "center",
+          padding: "3px 7px", display: "inline-flex", alignItems: "center", justifyContent: "center",
         }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: "#53f293", lineHeight: 1, fontFamily: "Poppins, sans-serif" }}>+{extraCount}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#53f293", lineHeight: 1, fontFamily: "Poppins, sans-serif" }}>+{extraCount}</span>
         </div>
       )}
     </div>
@@ -396,16 +377,16 @@ function MapMarker({ x, y, children, badge, badgeLeft, extraCount, active, onCli
             {children}
           </div>
         </div>
-        {badge && <div style={{ position: "absolute", top: -2, right: -4, zIndex: 2 }}>{badge}</div>}
-        {badgeLeft && <div style={{ position: "absolute", top: -2, left: -4, zIndex: 2 }}>{badgeLeft}</div>}
+        {badge && <div style={{ position: "absolute", top: -6, right: -6, zIndex: 2 }}>{badge}</div>}
+        {badgeLeft && <div style={{ position: "absolute", top: -6, left: -6, zIndex: 2 }}>{badgeLeft}</div>}
         {(extraCount ?? 0) > 0 && (
           <div style={{
-            position: "absolute", bottom: 6, right: -18, zIndex: 2,
+            position: "absolute", bottom: 6, right: -20, zIndex: 2,
             background: "#11301d", borderRadius: 99, border: "1.5px solid white",
-            padding: "2px 5px",
+            padding: "3px 7px",
             display: "inline-flex", alignItems: "center", justifyContent: "center",
           }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: "#53f293", lineHeight: 1, fontFamily: "Poppins, sans-serif" }}>+{extraCount}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#53f293", lineHeight: 1, fontFamily: "Poppins, sans-serif" }}>+{extraCount}</span>
           </div>
         )}
       </div>
@@ -423,14 +404,11 @@ function FriendMapPin({ x, y, person, hasReturnVisit, hasFavourited, extraFriend
   onClick: () => void;
 }) {
   const badge = hasReturnVisit ? (
-    <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff592", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/images/Return_visits.png" alt="" style={{ width: 8, height: 8, objectFit: "contain" }} />
-    </div>
+    <span style={{ fontSize: 17, lineHeight: 1 }}>🔁</span>
   ) : undefined;
   const heartBadge = hasFavourited ? (
-    <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fce4e4", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <svg width="8" height="8" viewBox="0 0 10 10" fill="#f24141" xmlns="http://www.w3.org/2000/svg">
+    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#fce4e4", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <svg width="14" height="14" viewBox="0 0 10 10" fill="#f24141" xmlns="http://www.w3.org/2000/svg">
         <path d="M5 8.5C5 8.5 1 5.8 1 3.2C1 1.8 2 1 3.2 1C4 1 4.7 1.5 5 2C5.3 1.5 6 1 6.8 1C8 1 9 1.8 9 3.2C9 5.8 5 8.5 5 8.5Z"/>
       </svg>
     </div>
@@ -467,13 +445,13 @@ function LegendMapPin({ x, y, count, hasReturnVisit, active, onClick }: {
       <div style={{ position: "relative", width: 40, height: 48 }}>
         {/* Count badge at top-left */}
         <div style={{
-          position: "absolute", top: -4, left: -6, zIndex: 3,
-          minWidth: 18, height: 18, borderRadius: 9,
+          position: "absolute", top: -6, left: -6, zIndex: 3,
+          minWidth: 22, height: 22, borderRadius: 11,
           background: "#11301d", border: "1.5px solid white",
           display: "flex", alignItems: "center", justifyContent: "center",
-          paddingLeft: 4, paddingRight: 4,
+          paddingLeft: 5, paddingRight: 5,
         }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: "white", fontFamily: "Poppins, sans-serif" }}>{count}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "white", fontFamily: "Poppins, sans-serif" }}>{count}</span>
         </div>
 
         {/* Teardrop pin */}
@@ -503,14 +481,8 @@ function LegendMapPin({ x, y, count, hasReturnVisit, active, onClick }: {
 
         {/* Return-visit indicator at bottom-right */}
         {hasReturnVisit && (
-          <div style={{
-            position: "absolute", bottom: 6, right: -4, zIndex: 2,
-            width: 14, height: 14, borderRadius: "50%",
-            background: "#fff592", border: "1.5px solid white",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/Return_visits.png" alt="" style={{ width: 8, height: 8, objectFit: "contain" }} />
+          <div style={{ position: "absolute", bottom: 6, right: -6, zIndex: 2 }}>
+            <span style={{ fontSize: 17, lineHeight: 1 }}>🔁</span>
           </div>
         )}
       </div>
@@ -518,7 +490,7 @@ function LegendMapPin({ x, y, count, hasReturnVisit, active, onClick }: {
   );
 }
 
-const USER_AVATAR = "/images/Steve.jpg";
+const USER_AVATAR = "/images/jamie.jpg";
 
 function MyListMapPin({ x, y, type, hasReturnVisit, active, onClick }: {
   x: number; y: number;
@@ -528,19 +500,19 @@ function MyListMapPin({ x, y, type, hasReturnVisit, active, onClick }: {
   onClick: () => void;
 }) {
   const badge = hasReturnVisit ? (
-    <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff592", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/images/Return_visits.png" alt="" style={{ width: 8, height: 8, objectFit: "contain" }} />
+    <span style={{ fontSize: 17, lineHeight: 1 }}>🔁</span>
+  ) : undefined;
+  const heartBadge = type === "saved" ? (
+    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#fce4e4", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <svg width="14" height="14" viewBox="0 0 10 10" fill="#f24141" xmlns="http://www.w3.org/2000/svg">
+        <path d="M5 8.5C5 8.5 1 5.8 1 3.2C1 1.8 2 1 3.2 1C4 1 4.7 1.5 5 2C5.3 1.5 6 1 6.8 1C8 1 9 1.8 9 3.2C9 5.8 5 8.5 5 8.5Z"/>
+      </svg>
     </div>
   ) : undefined;
   return (
-    <MapMarker x={x} y={y} badge={badge} active={active} onClick={onClick}>
-      {type === "visited" ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={USER_AVATAR} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      ) : (
-        <Heart size={16} fill="#11301d" className="text-[#11301d]" />
-      )}
+    <MapMarker x={x} y={y} badge={badge} badgeLeft={heartBadge} active={active} onClick={onClick}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={USER_AVATAR} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
     </MapMarker>
   );
 }
@@ -641,10 +613,10 @@ function SocialResultCard({
         </div>
         {/* Bottom social pills — mirrors the list view's grey + yellow combo */}
         {usePills && (
-          <div className="flex items-center gap-[4px] mt-[6px] min-w-0">
+          <div className="flex items-center gap-[4px] mt-[6px] overflow-x-auto scrollbar-hide">
             {pillText && (
               <div
-                className="inline-flex items-center gap-[4px] rounded-[10px] min-w-0"
+                className="inline-flex items-center gap-[4px] rounded-[10px] shrink-0"
                 style={{ background: "rgba(0,0,0,0.05)", padding: "4px 6px" }}
               >
                 {pillIcon}
@@ -723,28 +695,7 @@ function SocialResultStrip({ mode, personEntries: personEntriesOverride, person,
   const cards = discoverEntries
     ? discoverEntries.map((entry) => {
         const ov = entry.overlay;
-        let pillIcon: React.ReactNode;
-        let pillText: string | undefined;
-        let pillReturns: string | undefined;
-        if (ov?.returnBadge) {
-          pillReturns = `x${ov.returnCount ?? ""} ${ov.returnType ?? "friends"} returned here`;
-        } else if (ov?.avatarPhoto && ov.avatarName) {
-          pillIcon = (
-            <div style={{ width: 14, height: 14, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={ov.avatarPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            </div>
-          );
-          pillText = `Recommended by ${ov.avatarName}`;
-        } else if (ov?.foodie) {
-          pillIcon = (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src="/images/Food legend.png" alt="" style={{ width: 12, height: 12, objectFit: "contain" }} />
-          );
-          pillText = `${ov.foodieCount ?? ""} foodies ate here`;
-        } else if (ov?.extraCount) {
-          pillText = `+${ov.extraCount} friends booked`;
-        }
+        const isTop = ov?.topForYou;
         return {
           image: entry.restaurant.image,
           title: entry.restaurant.name,
@@ -753,9 +704,9 @@ function SocialResultStrip({ mode, personEntries: personEntriesOverride, person,
           rating: entry.restaurant.rating,
           distance: entry.restaurant.distance,
           deals: entry.restaurant.deals,
-          pillIcon,
-          pillText,
-          pillReturns,
+          pillIcon: isTop ? <span style={{ fontSize: 15, lineHeight: 1 }}>⭐</span> : undefined,
+          pillText: isTop ? "Top for you" : undefined,
+          pillReturns: isTop && ov.topForYouReason ? ov.topForYouReason : undefined,
         };
       })
     : (personEntriesOverride && person)
@@ -786,7 +737,7 @@ function SocialResultStrip({ mode, personEntries: personEntriesOverride, person,
           pillText: entry.type === "visited"
             ? `Recommended by ${person.name}`
             : `${person.name} saved`,
-          pillReturns: entry.hasReturn ? "returns" : undefined,
+          pillReturns: entry.hasReturn ? "1x return" : undefined,
         };
       })
     : mode === "friends"
@@ -814,7 +765,7 @@ function SocialResultStrip({ mode, personEntries: personEntriesOverride, person,
             : `Recommended by ${c.friendName}`,
         pillReturns: (() => {
           const m = c.badge?.match(/^x(\d+)/);
-          return m ? `${m[1]}x returns` : undefined;
+          return m ? `${m[1]}x return` : undefined;
         })(),
       }))
     : mode === "legends"
@@ -830,7 +781,7 @@ function SocialResultStrip({ mode, personEntries: personEntriesOverride, person,
           <img src="/images/Food legend.png" alt="" className="shrink-0" style={{ width: 12, height: 12, objectFit: "contain" }} />
         ),
         pillText: `${c.booked} local foodies booked`,
-        pillReturns: c.rebooked > 0 ? `${c.rebooked}x returns` : undefined,
+        pillReturns: c.rebooked > 0 ? `${c.rebooked}x return` : undefined,
       }))
     : MYLIST_ENTRIES.map((entry) => ({
         image: entry.restaurant.image, title: entry.restaurant.name, cuisine: entry.restaurant.cuisine,
@@ -1209,10 +1160,10 @@ function RestaurantListItem({
           {/* Recency signal pill + optional yellow returns pill — heights
               matched, kept on a single row (returns badge never wraps below). */}
           {(signal || returnsBadge) && (
-            <div className="flex items-center gap-[4px] min-w-0">
+            <div className="flex items-center gap-[4px] overflow-x-auto scrollbar-hide">
               {signal && (
                 <div
-                  className="inline-flex items-center gap-[4px] rounded-[10px] min-w-0"
+                  className="inline-flex items-center gap-[4px] rounded-[10px] shrink-0"
                   style={{ background: "rgba(0,0,0,0.05)", padding: "4px 6px" }}
                 >
                   {signalIcon}
@@ -1333,8 +1284,11 @@ function personListEntries(name: string): MyListEntry[] {
   if (!person) return [];
   const counts = parsePersonCounts(person.meta);
   const cap = PERSON_MAP_PINS.length; // 25
-  const v = Math.min(counts.visited, cap);
-  const s = Math.min(counts.saved, Math.max(0, cap - v));
+  // Reserve slots for saved places so heart badges always appear when the
+  // person has saved restaurants (important for legends who have many visits).
+  const savedSlots = counts.saved > 0 ? Math.min(counts.saved, Math.max(3, Math.floor(cap * 0.2))) : 0;
+  const v = Math.min(counts.visited, cap - savedSlots);
+  const s = Math.min(counts.saved, cap - v);
   let seed = 0;
   for (let i = 0; i < name.length; i++) seed = (seed * 31 + name.charCodeAt(i)) | 0;
   seed = Math.abs(seed);
@@ -2102,7 +2056,7 @@ function SocialSheet({ open, onClose, onShowResults, onReset, onSelectPerson }: 
                 style={{ fontFamily: "Poppins, sans-serif", background: "#53f293" }}
                 onClick={() => onShowResults(tab, radius)}
               >
-                Show {tab === "legends" ? 31 : tab === "mylist" ? MYLIST_ENTRIES.length : 23} results
+                {tab === "legends" ? "Show all foodies" : tab === "friends" ? "Show all friends" : `Show ${MYLIST_ENTRIES.length} results`}
               </button>
               <button
                 onClick={onReset}
@@ -2156,7 +2110,12 @@ function BottomSheet({ tabBarHeight, socialResultMode, selectedPerson, personEnt
     if (socialResultMode === "friends") return dedupe(FRIEND_RESULT_CARDS.map((c) => c.restaurant));
     if (socialResultMode === "legends") return dedupe(LEGEND_RESULT_CARDS.map((c) => c.restaurant));
     if (socialResultMode === "mylist")  return MYLIST_ENTRIES.map((e) => e.restaurant);
-    return RESTAURANTS;
+    // Surface one "Top for you" restaurant at the top of the default browse list.
+    const topFirst = "5"; // Sakura Ramen — Mia recommended
+    return [
+      ...RESTAURANTS.filter((r) => r.id === topFirst),
+      ...RESTAURANTS.filter((r) => r.id !== topFirst),
+    ];
   })();
 
   // Friend-style social signal for a restaurant — used both in the friends
@@ -2189,7 +2148,7 @@ function BottomSheet({ tabBarHeight, socialResultMode, selectedPerson, personEnt
     );
     return {
       text: (namesText === "Kate" || namesText === "Laura" || namesText === "James") ? `Recommended by ${namesText}` : `${namesText} booked`,
-      returns: total > 0 ? `${total}x returns` : undefined,
+      returns: total > 0 ? `${total}x return` : undefined,
       icon,
     };
   }
@@ -2206,7 +2165,7 @@ function BottomSheet({ tabBarHeight, socialResultMode, selectedPerson, personEnt
     );
     return {
       text: `${best.booked} local foodies booked`,
-      returns: best.rebooked > 0 ? `${best.rebooked}x returns` : undefined,
+      returns: best.rebooked > 0 ? `${best.rebooked}x return` : undefined,
       icon,
     };
   }
@@ -2243,6 +2202,16 @@ function BottomSheet({ tabBarHeight, socialResultMode, selectedPerson, personEnt
     if (socialResultMode === null) {
       if (restaurant.id === "1" || restaurant.id === "3") return friendSignal(restaurant);
       if (restaurant.id === "4") return legendSignal(restaurant);
+      if (restaurant.id === "5") return {
+        icon: <span style={{ fontSize: 15, lineHeight: 1 }}>⭐</span>,
+        text: "Top for you",
+        returns: "Mia recommended this to you",
+      };
+      if (restaurant.id === "6") return {
+        icon: <span style={{ fontSize: 15, lineHeight: 1 }}>⭐</span>,
+        text: "Top for you",
+        returns: "Laura recommended this to you",
+      };
     }
     return null;
   }
@@ -2720,21 +2689,10 @@ export default function DiscoverPage() {
         })}
         {!socialResultMode && !selectedPerson && MAP_PINS.map((pin, i) => {
           const ov = MAP_PIN_OVERLAYS[i];
-          const badge = ov?.returnBadge ? (
-            <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff592", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <img src="/images/Return_visits.png" alt="" style={{ width: 8, height: 8, objectFit: "contain" }} />
-            </div>
-          ) : ov?.foodie ? (
-            <div style={{ width: 14, height: 14, borderRadius: "50%", background: "white", border: "1.5px solid rgba(0,0,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <img src="/images/Food legend.png" alt="" style={{ width: 9, height: 9, objectFit: "contain" }} />
-            </div>
+          const badge = ov?.topForYou ? (
+            <span style={{ fontSize: 17, lineHeight: 1 }}>⭐</span>
           ) : undefined;
-          const badgeLeft = ov?.avatarPhoto ? (
-            <div style={{ width: 14, height: 14, borderRadius: "50%", overflow: "hidden", border: "1.5px solid white" }}>
-              <img src={ov.avatarPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            </div>
-          ) : undefined;
-          return <NeoPin key={i} x={pin.x} y={pin.y} badge={badge} badgeLeft={badgeLeft} extraCount={ov?.extraCount} active={i === activeCardIdx && discoverPinSelected} onClick={() => { setActiveCardIdx(i); setDiscoverPinSelected(true); }} />;
+          return <NeoPin key={i} x={pin.x} y={pin.y} badge={badge} active={i === activeCardIdx && discoverPinSelected} onClick={() => { setActiveCardIdx(i); setDiscoverPinSelected(true); }} />;
         })}
       </div>
 
