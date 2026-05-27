@@ -295,15 +295,15 @@ function NeoPin({ x, y, badge, badgeLeft, extraCount, active, onClick }: {
           }}
         />
       </div>
-      {badge     && <div style={{ position: "absolute", top: -6, right: -6, zIndex: 2 }}>{badge}</div>}
-      {badgeLeft && <div style={{ position: "absolute", top: -6, left: -6,  zIndex: 2 }}>{badgeLeft}</div>}
+      {badge     && <div style={{ position: "absolute", top: -6, right: -10, zIndex: 2 }}>{badge}</div>}
+      {badgeLeft && <div style={{ position: "absolute", top: -6, left: -10,  zIndex: 2 }}>{badgeLeft}</div>}
       {(extraCount ?? 0) > 0 && (
         <div style={{
           position: "absolute", bottom: 6, right: -20, zIndex: 2,
           background: "#11301d", borderRadius: 99, border: "1.5px solid white",
           padding: "3px 7px", display: "inline-flex", alignItems: "center", justifyContent: "center",
         }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#53f293", lineHeight: 1, fontFamily: "Poppins, sans-serif" }}>+{extraCount}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#53f293", lineHeight: 1, fontFamily: "Poppins, sans-serif" }}>+{extraCount}</span>
         </div>
       )}
     </div>
@@ -386,7 +386,7 @@ function MapMarker({ x, y, children, badge, badgeLeft, extraCount, active, onCli
             padding: "3px 7px",
             display: "inline-flex", alignItems: "center", justifyContent: "center",
           }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#53f293", lineHeight: 1, fontFamily: "Poppins, sans-serif" }}>+{extraCount}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#53f293", lineHeight: 1, fontFamily: "Poppins, sans-serif" }}>+{extraCount}</span>
           </div>
         )}
       </div>
@@ -404,11 +404,11 @@ function FriendMapPin({ x, y, person, hasReturnVisit, hasFavourited, extraFriend
   onClick: () => void;
 }) {
   const badge = hasReturnVisit ? (
-    <span style={{ fontSize: 17, lineHeight: 1 }}>🔁</span>
+    <span style={{ fontSize: 16, lineHeight: 1 }}>🔁</span>
   ) : undefined;
   const heartBadge = hasFavourited ? (
-    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#fce4e4", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <svg width="14" height="14" viewBox="0 0 10 10" fill="#f24141" xmlns="http://www.w3.org/2000/svg">
+    <div style={{ width: 21, height: 21, borderRadius: "50%", background: "#fce4e4", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <svg width="13" height="13" viewBox="0 0 10 10" fill="#f24141" xmlns="http://www.w3.org/2000/svg">
         <path d="M5 8.5C5 8.5 1 5.8 1 3.2C1 1.8 2 1 3.2 1C4 1 4.7 1.5 5 2C5.3 1.5 6 1 6.8 1C8 1 9 1.8 9 3.2C9 5.8 5 8.5 5 8.5Z"/>
       </svg>
     </div>
@@ -482,7 +482,7 @@ function LegendMapPin({ x, y, count, hasReturnVisit, active, onClick }: {
         {/* Return-visit indicator at bottom-right */}
         {hasReturnVisit && (
           <div style={{ position: "absolute", bottom: 6, right: -6, zIndex: 2 }}>
-            <span style={{ fontSize: 17, lineHeight: 1 }}>🔁</span>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>🔁</span>
           </div>
         )}
       </div>
@@ -500,11 +500,11 @@ function MyListMapPin({ x, y, type, hasReturnVisit, active, onClick }: {
   onClick: () => void;
 }) {
   const badge = hasReturnVisit ? (
-    <span style={{ fontSize: 17, lineHeight: 1 }}>🔁</span>
+    <span style={{ fontSize: 16, lineHeight: 1 }}>🔁</span>
   ) : undefined;
   const heartBadge = type === "saved" ? (
-    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#fce4e4", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <svg width="14" height="14" viewBox="0 0 10 10" fill="#f24141" xmlns="http://www.w3.org/2000/svg">
+    <div style={{ width: 21, height: 21, borderRadius: "50%", background: "#fce4e4", border: "1.5px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <svg width="13" height="13" viewBox="0 0 10 10" fill="#f24141" xmlns="http://www.w3.org/2000/svg">
         <path d="M5 8.5C5 8.5 1 5.8 1 3.2C1 1.8 2 1 3.2 1C4 1 4.7 1.5 5 2C5.3 1.5 6 1 6.8 1C8 1 9 1.8 9 3.2C9 5.8 5 8.5 5 8.5Z"/>
       </svg>
     </div>
